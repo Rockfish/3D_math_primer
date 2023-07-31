@@ -12,9 +12,6 @@ fn main() {
     let (sin, cos) = angle.to_radians().sin_cos();
     println!("angle: {:?}  radius: {:?}  x: {:.5}  y: {:.5}", angle, radius, radius*cos, radius*sin);
 
-
-
-
     let angle = get_angle(x, y);
     println!("x: {:.5}  y: {:.5}  angle: {:.5}  degrees: {:.5} ", x, y, angle, angle.to_degrees());
 
