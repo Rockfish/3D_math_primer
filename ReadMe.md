@@ -1,3 +1,3 @@
 # Simple Math
 
-Playground of math bits.
+Simple library of 3D math bits.
