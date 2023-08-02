@@ -1,3 +1,3 @@
 # Simple Math
 
-Simple library of 3D math bits.
+Port of C++ 3D math primer code.
