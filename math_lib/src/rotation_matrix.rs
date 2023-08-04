@@ -46,7 +46,7 @@
 
 use crate::euler_angles::EulerAngles;
 use crate::quaternion::Quaternion;
-use crate::vector::Vec3;
+use crate::vector3::Vector3;
 
 #[derive(Debug)]
 pub struct RotationMatrix {
@@ -100,6 +100,31 @@ impl RotationMatrix {
         self.m33 = cos_heading * cos_pitch;
     }
 
+    // Setup new matrix with the specified orientation
+    pub fn from_euler_angles(orientation: &EulerAngles) -> RotationMatrix {
+        // Fetch sine and cosine of angles
+
+        let (sin_heading, cos_heading) = orientation.heading.sin_cos();
+        let (sin_pitch, cos_pitch) = orientation.pitch.sin_cos();
+        let (sin_bank, cos_bank) = orientation.bank.sin_cos();
+
+        // Fill in the matrix elements
+
+        RotationMatrix {
+            m11: cos_heading * cos_bank + sin_heading * sin_pitch * sin_bank,
+            m12: -cos_heading * sin_bank + sin_heading * sin_pitch * cos_bank,
+            m13: sin_heading * cos_pitch,
+
+            m21: sin_bank * cos_pitch,
+            m22: cos_bank * cos_pitch,
+            m23: -sin_pitch,
+
+            m31: -sin_heading * cos_bank + cos_heading * sin_pitch * sin_bank,
+            m32: sin_bank * sin_heading + cos_heading * sin_pitch * cos_bank,
+            m33: cos_heading * cos_pitch,
+        }
+    }
+
     // Setup the matrix, given a quaternion that performs an inertial->object
     // rotation
     pub fn set_from_inertial_to_object_quaternion(&mut self, q: &Quaternion) {
@@ -139,9 +164,9 @@ impl RotationMatrix {
     }
 
     // Rotate a vector from inertial to object space
-    pub fn inertial_to_object(&self, v: &Vec3) -> Vec3 {
+    pub fn inertial_to_object(&self, v: &Vector3) -> Vector3 {
         // Perform the matrix multiplication in the "standard" way.
-        Vec3 {
+        Vector3 {
             x: self.m11 * v.x + self.m21 * v.y + self.m31 * v.z,
             y: self.m12 * v.x + self.m22 * v.y + self.m32 * v.z,
             z: self.m13 * v.x + self.m23 * v.y + self.m33 * v.z,
@@ -149,9 +174,9 @@ impl RotationMatrix {
     }
 
     // Rotate a vector from object to inertial space
-    pub fn object_to_inertial(&self, v: &Vec3) -> Vec3 {
+    pub fn object_to_inertial(&self, v: &Vector3) -> Vector3 {
         // Multiply by the transpose
-        Vec3 {
+        Vector3 {
             x: self.m11 * v.x + self.m12 * v.y + self.m13 * v.z,
             y: self.m21 * v.x + self.m22 * v.y + self.m23 * v.z,
             z: self.m31 * v.x + self.m32 * v.y + self.m33 * v.z,

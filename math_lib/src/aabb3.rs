@@ -3,20 +3,20 @@
 use std::ops::Mul;
 // use std::ops::Mul;
 use crate::matrix4x3::*;
-use crate::vector::*;
+use crate::vector3::*;
 
 // Implement a 3D axially aligned bounding box
 
 #[derive(Clone, Debug)]
 struct AABB3 {
-    min: Vec3,
-    max: Vec3,
+    min: Vector3,
+    max: Vector3,
 }
 
 impl AABB3 {
     // Query for dimensions
 
-    pub fn size(&self) -> Vec3 {
+    pub fn size(&self) -> Vector3 {
         &self.max - &self.min
     }
 
@@ -32,8 +32,8 @@ impl AABB3 {
         self.max.z - self.min.z
     }
 
-    pub fn center(&self) -> Vec3 {
-        (&self.min + &self.max).mul(0.5)
+    pub fn center(&self) -> Vector3 {
+        (&(&self.min + &self.max)).mul(0.5)
     }
 
     //---------------------------------------------------------------------------
@@ -75,11 +75,11 @@ impl AABB3 {
     // Bit 1 selects min.y vs. max.y
     // Bit 2 selects min.z vs. max.z
 
-    pub fn corner(&self, i: i32) -> Vec3 {
+    pub fn corner(&self, i: i32) -> Vector3 {
         // Make sure index is in range...
         assert!(i >= 0);
         assert!(i <= 7);
-        Vec3 {
+        Vector3 {
             x: if (i & 1) == 1 { self.max.x } else { self.min.x },
             y: if (i & 2) == 2 { self.max.y } else { self.min.y },
             z: if (i & 4) == 4 { self.max.z } else { self.min.z },
@@ -101,7 +101,7 @@ impl AABB3 {
 
     // Add a point to the box
     // Expand the box as necessary to contain the point.
-    pub fn add_point(&mut self, p: &Vec3) {
+    pub fn add_point(&mut self, p: &Vector3) {
         if p.x < self.min.x {
             self.min.x = p.x
         };
@@ -248,7 +248,7 @@ impl AABB3 {
 
     // contains
     // Return true if the box contains a point
-    pub fn contains(&self, p: &Vec3) -> bool {
+    pub fn contains(&self, p: &Vector3) -> bool {
         // Check for overlap on each axis
         (p.x >= self.min.x)
             && (p.x <= self.max.x)
@@ -259,8 +259,8 @@ impl AABB3 {
     }
 
     // Return the closest point on this box to another point
-    pub fn closest_point_to(&self, p: &Vec3) -> Vec3 {
-        let mut r: Vec3 = Vec3 {
+    pub fn closest_point_to(&self, p: &Vector3) -> Vector3 {
+        let mut r: Vector3 = Vector3 {
             x: 0.0,
             y: 0.0,
             z: 0.0,
@@ -295,7 +295,7 @@ impl AABB3 {
     }
 
     // Return true if we intersect a sphere.  Uses Arvo's algorithm.
-    pub fn intersects_sphere(&self, center: &Vec3, radius: f32) -> bool {
+    pub fn intersects_sphere(&self, center: &Vector3, radius: f32) -> bool {
         // Find the closest point on box to the point
 
         let closest_point = self.closest_point_to(center);
@@ -313,9 +313,9 @@ impl AABB3 {
     // From "Fast Ray-Box Intersection," by Woo in Graphics Gems I, page 395.
     pub fn ray_intersect(
         &self,
-        ray_org: &Vec3,                   // origin of the ray
-        ray_delta: &Vec3,                 // length and direction of the ray
-        return_normal: Option<&mut Vec3>, // optionally, the normal is returned
+        ray_org: &Vector3,                   // origin of the ray
+        ray_delta: &Vector3,                 // length and direction of the ray
+        return_normal: Option<&mut Vector3>, // optionally, the normal is returned
     ) -> f32 {
         // We'll return this huge number if no intersection
 
@@ -421,8 +421,7 @@ impl AABB3 {
 
         match which {
             // intersect with yz plane
-            0 =>
-            {
+            0 => {
                 let y = ray_org.y + ray_delta.y * t;
                 if y < self.min.y || y > self.max.y {
                     return k_no_intersection;
@@ -439,8 +438,7 @@ impl AABB3 {
                 }
             }
             // intersect with xz plane
-            1 =>
-            {
+            1 => {
                 let x = ray_org.x + ray_delta.x * t;
                 if x < self.min.x || x > self.max.x {
                     return k_no_intersection;
@@ -457,8 +455,7 @@ impl AABB3 {
                 }
             }
             // intersect with xy plane
-            2 =>
-            {
+            2 => {
                 let x = ray_org.x + ray_delta.x * t;
                 if x < self.min.x || x > self.max.x {
                     return k_no_intersection;
@@ -489,7 +486,7 @@ impl AABB3 {
     // <0	Box is completely on the BACK side of the plane
     // >0	Box is completely on the FRONT side of the plane
     // 0	Box intersects the plane
-    pub fn classify_plane(&self, n: &Vec3, d: f32) -> i32 {
+    pub fn classify_plane(&self, n: &Vector3, d: f32) -> i32 {
         // Inspect the normal and compute the minimum and maximum
         // D values.
 
@@ -551,7 +548,7 @@ impl AABB3 {
     // displacement.
     //
     // Only intersections with the front side of the plane are detected
-    pub fn intersect_plane(&self, n: &Vec3, plane_d: f32, dir: &Vec3) -> f32 {
+    pub fn intersect_plane(&self, n: &Vector3, plane_d: f32, dir: &Vector3) -> f32 {
         // Make sure they are passing in normalized vectors
 
         assert!((n.dot(n) - 1.0).abs() < 0.01);
@@ -667,7 +664,7 @@ impl AABB3 {
     //
     // Return parametric point in time when a moving AABB collides
     // with a stationary AABB.  Returns > 1 if no intersection
-    pub fn intersect_moving_aabb(stationary_box: &AABB3, moving_box: &AABB3, d: &Vec3) -> f32 {
+    pub fn intersect_moving_aabb(stationary_box: &AABB3, moving_box: &AABB3, d: &Vector3) -> f32 {
         // We'll return this huge number if no intersection
 
         let k_no_intersection = f32::MAX;

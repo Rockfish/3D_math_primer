@@ -2,7 +2,7 @@
 
 use crate::euler_angles::EulerAngles;
 use crate::utils::{atan2, safe_acos};
-use crate::vector::Vec3;
+use crate::vector3::Vector3;
 use std::ops;
 
 #[derive(Clone, Debug)]
@@ -59,7 +59,7 @@ impl Quaternion {
         self.z = theta_over_2.sin();
     }
 
-    pub fn set_to_rotate_about_axis(&mut self, axis: Vec3, theta: f32) {
+    pub fn set_to_rotate_about_axis(&mut self, axis: Vector3, theta: f32) {
         // The axis of rotation must be normalized
 
         assert!((axis.magnitude() - 1.0).abs() < 0.01);
@@ -150,7 +150,7 @@ impl Quaternion {
 
     // Quaternion::getRotationAxis
     // Return the rotation axis
-    pub fn get_rotation_axis(&self) -> Vec3 {
+    pub fn get_rotation_axis(&self) -> Vector3 {
         // Compute sin^2(theta/2).  Remember that w = cos(theta/2),
         // and sin^2(x) + cos^2(x) = 1
 
@@ -162,7 +162,7 @@ impl Quaternion {
             // Identity quaternion, or numerical imprecision.  Just
             // return any valid vector, since it doesn't matter
 
-            return Vec3 {
+            return Vector3 {
                 x: 1.0,
                 y: 0.0,
                 z: 0.0,
@@ -175,7 +175,7 @@ impl Quaternion {
 
         // Return axis of rotation
 
-        return Vec3 {
+        return Vector3 {
             x: self.x * one_over_sin_theta_over2,
             y: self.y * one_over_sin_theta_over2,
             z: self.z * one_over_sin_theta_over2,

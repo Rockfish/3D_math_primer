@@ -1,10 +1,10 @@
-mod aabb3;
-mod euler_angles;
-mod matrix4x3;
-mod quaternion;
-mod rotation_matrix;
-mod utils;
-mod vector;
+pub mod aabb3;
+pub mod euler_angles;
+pub mod matrix4x3;
+pub mod quaternion;
+pub mod rotation_matrix;
+pub mod utils;
+pub mod vector3;
 
 pub fn add(left: usize, right: usize) -> usize {
     left + right
