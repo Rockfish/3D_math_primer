@@ -1,5 +1,7 @@
 #![allow(dead_code)]
 
+use crate::vector::Vec3;
+
 #[derive(Debug)]
 pub struct Matrix4x3 {
     pub m11: f32,
@@ -33,4 +35,12 @@ impl Matrix4x3 {
             tz: 0.0,
         }
     }
+
+    pub fn get_translation(&self) -> Vec3 {
+        todo!();
+    }
+}
+
+pub fn get_translation(_m: &Matrix4x3) -> Vec3 {
+    todo!();
 }

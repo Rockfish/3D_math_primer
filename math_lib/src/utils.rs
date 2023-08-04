@@ -32,6 +32,6 @@ pub fn safe_acos(x: f32) -> f32 {
     }
 }
 
-pub fn atan(a: f32, b: f32) -> f32 {
+pub fn atan2(a: f32, b: f32) -> f32 {
     a.atan2(b)
 }

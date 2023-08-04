@@ -2,13 +2,13 @@
 
 use std::ops;
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Vec2 {
     pub x: f32,
     pub y: f32,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Vec3 {
     pub x: f32,
     pub y: f32,
@@ -36,11 +36,11 @@ impl Vec3 {
         };
     }
 
-    pub fn eq(&self, other: Vec3) -> bool {
+    pub fn eq(&self, other: &Vec3) -> bool {
         (self.x == other.x) & (self.y == other.y) & (self.z == other.z)
     }
 
-    pub fn not_eq(&self, other: Vec3) -> bool {
+    pub fn not_eq(&self, other: &Vec3) -> bool {
         (self.x != other.x) | (self.y != other.y) | (self.z != other.z)
     }
 
@@ -52,7 +52,7 @@ impl Vec3 {
         };
     }
 
-    pub fn add(&self, other: Vec3) -> Vec3 {
+    pub fn add(&self, other: &Vec3) -> Vec3 {
         Vec3 {
             x: self.x + other.x,
             y: self.y + other.y,
@@ -60,7 +60,7 @@ impl Vec3 {
         }
     }
 
-    pub fn sub(&self, other: Vec3) -> Vec3 {
+    pub fn sub(&self, other: &Vec3) -> Vec3 {
         Vec3 {
             x: self.x - other.x,
             y: self.y - other.y,
@@ -79,7 +79,7 @@ impl Vec3 {
     }
 
     // dot product
-    pub fn dot(&self, other: Vec3) -> f32 {
+    pub fn dot(&self, other: &Vec3) -> f32 {
         self.x * other.x + self.y * other.y + self.z * other.z
     }
 
@@ -103,10 +103,17 @@ pub fn distance(a: &Vec3, b: &Vec3) -> f32 {
     (dx * dx + dy * dy + dz * dz).sqrt()
 }
 
-impl ops::Add<Vec3> for Vec3 {
+pub fn distance_squared(a: &Vec3, b: &Vec3) -> f32 {
+    let dx = a.x - b.x;
+    let dy = a.y - b.y;
+    let dz = a.z - b.z;
+    dx * dx + dy * dy + dz * dz
+}
+
+impl ops::Add<&Vec3> for &Vec3 {
     type Output = Vec3;
 
-    fn add(self, rhs: Vec3) -> Self::Output {
+    fn add(self, rhs: &Vec3) -> Self::Output {
         Vec3 {
             x: self.x + rhs.x,
             y: self.y + rhs.y,
@@ -115,10 +122,10 @@ impl ops::Add<Vec3> for Vec3 {
     }
 }
 
-impl ops::Sub<Vec3> for Vec3 {
+impl ops::Sub<&Vec3> for &Vec3 {
     type Output = Vec3;
 
-    fn sub(self, rhs: Vec3) -> Self::Output {
+    fn sub(self, rhs: &Vec3) -> Self::Output {
         Vec3 {
             x: self.x - rhs.x,
             y: self.y - rhs.y,
@@ -128,7 +135,7 @@ impl ops::Sub<Vec3> for Vec3 {
 }
 
 // Scalar multiple
-impl ops::Mul<f32> for Vec3 {
+impl ops::Mul<f32> for &Vec3 {
     type Output = Vec3;
 
     fn mul(self, a: f32) -> Self::Output {
@@ -140,10 +147,10 @@ impl ops::Mul<f32> for Vec3 {
     }
 }
 
-impl ops::Mul<Vec3> for f32 {
+impl ops::Mul<&Vec3> for f32 {
     type Output = Vec3;
 
-    fn mul(self, v: Vec3) -> Self::Output {
+    fn mul(self, v: &Vec3) -> Self::Output {
         Vec3 {
             x: self * v.x,
             y: self * v.y,
@@ -153,7 +160,7 @@ impl ops::Mul<Vec3> for f32 {
 }
 
 // Scalar divide
-impl ops::Div<f32> for Vec3 {
+impl ops::Div<f32> for &Vec3 {
     type Output = Vec3;
 
     fn div(self, a: f32) -> Self::Output {
@@ -165,16 +172,16 @@ impl ops::Div<f32> for Vec3 {
     }
 }
 
-impl ops::AddAssign<Vec3> for Vec3 {
-    fn add_assign(&mut self, other: Vec3) {
+impl ops::AddAssign<&Vec3> for Vec3 {
+    fn add_assign(&mut self, other: &Vec3) {
         self.x += other.x;
         self.y += other.y;
         self.z += other.z;
     }
 }
 
-impl ops::SubAssign<Vec3> for Vec3 {
-    fn sub_assign(&mut self, other: Vec3) {
+impl ops::SubAssign<&Vec3> for Vec3 {
+    fn sub_assign(&mut self, other: &Vec3) {
         self.x -= other.x;
         self.y -= other.y;
         self.z -= other.z;
