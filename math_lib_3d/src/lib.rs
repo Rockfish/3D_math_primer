@@ -2,7 +2,9 @@ pub mod aabb3;
 pub mod euler_angles;
 pub mod matrix4x3;
 pub mod quaternion;
+pub mod renderer;
 pub mod rotation_matrix;
+pub mod tri_mesh;
 pub mod utils;
 pub mod vector3;
 

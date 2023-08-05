@@ -8,9 +8,9 @@ use crate::vector3::*;
 // Implement a 3D axially aligned bounding box
 
 #[derive(Clone, Debug)]
-struct AABB3 {
-    min: Vector3,
-    max: Vector3,
+pub struct AABB3 {
+    pub min: Vector3,
+    pub max: Vector3,
 }
 
 impl AABB3 {

@@ -145,7 +145,7 @@ impl Quaternion {
         let theta_over2 = safe_acos(self.w);
 
         // Return the rotation angle
-        return theta_over2 * 2.0;
+        theta_over2 * 2.0
     }
 
     // Quaternion::getRotationAxis
@@ -175,11 +175,11 @@ impl Quaternion {
 
         // Return axis of rotation
 
-        return Vector3 {
+        Vector3 {
             x: self.x * one_over_sin_theta_over2,
             y: self.y * one_over_sin_theta_over2,
             z: self.z * one_over_sin_theta_over2,
-        };
+        }
     }
 }
 
@@ -340,7 +340,7 @@ pub fn pow(q: Quaternion, exponent: f32) -> Quaternion {
     // This will protect against divide by zero
 
     if (q.w).abs() > 0.9999 {
-        return q.clone();
+        return q;
     }
 
     // Extract the half angle alpha (alpha = theta/2)

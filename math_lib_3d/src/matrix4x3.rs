@@ -83,6 +83,21 @@ impl Matrix4x3 {
         }
     }
 
+    pub fn set_identity(&mut self) {
+        self.m11 = 1.0;
+        self.m12 = 0.0;
+        self.m13 = 0.0;
+        self.m21 = 0.0;
+        self.m22 = 1.0;
+        self.m23 = 0.0;
+        self.m31 = 0.0;
+        self.m32 = 0.0;
+        self.m33 = 1.0;
+        self.tx = 0.0;
+        self.ty = 0.0;
+        self.tz = 1.0;
+    }
+
     //---------------------------------------------------------------------------
     // zero_translation
     //
