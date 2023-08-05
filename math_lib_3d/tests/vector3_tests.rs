@@ -1,5 +1,5 @@
-use math_lib;
-use math_lib::vector3::*;
+use math_lib_3d;
+use math_lib_3d::vector3::*;
 
 #[test]
 fn test_mul_vector_by_scalar() {

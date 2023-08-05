@@ -1,4 +1,4 @@
-use math_lib::add;
+use math_lib_3d::add;
 use std::f64::consts::*;
 
 fn main() {

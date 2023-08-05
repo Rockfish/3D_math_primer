@@ -8,5 +8,5 @@ edition = "2021"
 [workspace]
 
 [dependencies]
-math_lib = { path = "math_lib" }
+math_lib_3d = { path = "math_lib_3d" }
 
