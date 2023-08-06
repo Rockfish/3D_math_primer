@@ -162,27 +162,27 @@ pub struct VideoMode {
 // See Section 15.7.2 for more information.
 
 pub struct RenderVertex {
-    p: Vector3, // position
-    n: Vector3, // normal
-    u: f32,     // texture mapping coordinate
-    v: f32,     // texture mapping coordinate
+    pub p: Vector3, // position
+    pub n: Vector3, // normal
+    pub u: f32,     // texture mapping coordinate
+    pub v: f32,     // texture mapping coordinate
 }
 
 pub struct RenderVertexL {
-    p: Vector3, // position
-    argb: u32,  // prelit diffuse color
-    u: f32,     // texture mapping coordinate
-    v: f32,     // texture mapping coordinate
+    pub p: Vector3, // position
+    pub argb: u32,  // prelit diffuse color
+    pub u: f32,     // texture mapping coordinate
+    pub v: f32,     // texture mapping coordinate
 }
 
 // Transformed and lit vertex
 
 pub struct RenderVertexTL {
-    p: Vector3, // screen space position and z value
-    oow: f32, // One Over W.  This is used for perspective projection.  Usually, you can just use 1/z.
-    argb: u32, // prelit diffuse color (8 bits per component - 0xAARRGGBB)
-    u: f32,   // texture mapping coordinate
-    v: f32,   // texture mapping coordinate
+    pub p: Vector3, // screen space position and z value
+    pub oow: f32, // One Over W.  This is used for perspective projection.  Usually, you can just use 1/z.
+    pub argb: u32, // prelit diffuse color (8 bits per component - 0xAARRGGBB)
+    pub u: f32,   // texture mapping coordinate
+    pub v: f32,   // texture mapping coordinate
 }
 
 //---------------------------------------------------------------------------

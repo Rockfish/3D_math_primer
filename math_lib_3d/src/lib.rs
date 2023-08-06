@@ -7,6 +7,8 @@ pub mod rotation_matrix;
 pub mod tri_mesh;
 pub mod utils;
 pub mod vector3;
+pub mod config;
+pub mod edit_tri_mesh;
 
 pub fn add(left: usize, right: usize) -> usize {
     left + right

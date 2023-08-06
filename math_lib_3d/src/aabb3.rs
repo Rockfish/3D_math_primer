@@ -14,6 +14,14 @@ pub struct AABB3 {
 }
 
 impl AABB3 {
+
+    pub fn new() -> Self {
+        AABB3 {
+            min: Vector3::identity(),
+            max: Vector3::identity(),
+        }
+    }
+
     // Query for dimensions
 
     pub fn size(&self) -> Vector3 {
