@@ -1,4 +1,9 @@
+//#![feature(drain_filter)]
+#![feature(extract_if)]
+
 pub mod aabb3;
+pub mod config;
+pub mod edit_tri_mesh;
 pub mod euler_angles;
 pub mod matrix4x3;
 pub mod quaternion;
@@ -7,8 +12,6 @@ pub mod rotation_matrix;
 pub mod tri_mesh;
 pub mod utils;
 pub mod vector3;
-pub mod config;
-pub mod edit_tri_mesh;
 
 pub fn add(left: usize, right: usize) -> usize {
     left + right

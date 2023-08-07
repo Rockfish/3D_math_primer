@@ -14,7 +14,6 @@ pub struct AABB3 {
 }
 
 impl AABB3 {
-
     pub fn new() -> Self {
         AABB3 {
             min: Vector3::identity(),
@@ -109,7 +108,7 @@ impl AABB3 {
 
     // Add a point to the box
     // Expand the box as necessary to contain the point.
-    pub fn add_point(&mut self, p: &Vector3) {
+    pub fn add_vector3(&mut self, p: &Vector3) {
         if p.x < self.min.x {
             self.min.x = p.x
         };

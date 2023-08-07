@@ -469,4 +469,8 @@ impl Renderer {
             .unwrap()
             .need_to_compute_model_to_clip_matrix = true;
     }
+
+    pub fn renderTriMesh(&self, p0: &Vec<RenderVertex>, p1: &i32, p2: &Vec<RenderTri>, p3: &i32) {
+        todo!()
+    }
 }

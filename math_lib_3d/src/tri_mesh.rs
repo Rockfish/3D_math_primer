@@ -2,6 +2,7 @@
 
 use crate::aabb3::*;
 use crate::config::Config;
+use crate::edit_tri_mesh::EditTriMesh;
 use crate::renderer::*;
 
 /////////////////////////////////////////////////////////////////////////////
@@ -17,21 +18,20 @@ use crate::renderer::*;
 
 pub struct TriMesh {
     // Mesh data
-    vertexCount: i32, //
-    vertexList: Vec<RenderVertex>,
-    triCount: i32,
-    triList: Vec<RenderTri>,
+    pub vertexCount: i32, //
+    pub vertexList: Vec<RenderVertex>,
+    pub triCount: i32,
+    pub triList: Vec<RenderTri>,
 
     // Axially aligned bounding box.  You must call computeBoundingBox()
     // to update this if you modify the vertex list directly
-    bounding_box: AABB3,
+    pub bounding_box: AABB3,
 }
 
 impl TriMesh {
-
-// TriMesh
-//
-// Constructor - reset internal variables to default (empty) state
+    // TriMesh
+    //
+    // Constructor - reset internal variables to default (empty) state
 
     pub fn default() -> Self {
         let mut bounding_box = AABB3::new();
@@ -41,7 +41,7 @@ impl TriMesh {
             vertexList: Vec::new(),
             triCount: 0,
             triList: Vec::new(),
-            bounding_box
+            bounding_box,
         }
     }
 
@@ -94,114 +94,121 @@ impl TriMesh {
         triCount = 0;
         }
     */
-//---------------------------------------------------------------------------
-// render
-//
-// Render the mesh using current 3D renderer context
+    //---------------------------------------------------------------------------
+    // render
+    //
+    // Render the mesh using current 3D renderer context
 
     pub fn render(&self, config: &Config) {
         config.renderer.renderTriMesh(
             &self.vertexList,
             &self.vertexCount,
             &self.triList,
-            &self.triCount
+            &self.triCount,
         );
-}
-
-//---------------------------------------------------------------------------
-// computeBoundingBox
-//
-// Compute axially aligned bounding box from vertex list
-
-pub fn computeBoundingBox(&self) {
-
-// Empty bounding box
-self.boundingBox.empty();
-
-// Add in vertex locations
-    for v in self.vertexList {
-        self.bounding_box.add(v.p.clone());
     }
-}
 
-//---------------------------------------------------------------------------
-// fromEditMesh
-//
-// Convert an EditTriMesh to a TriMesh.  Note that this function may need
-// to make many logical changes to the mesh, such as ordering of vertices.
-// Vertices may need to be duplicated to place UV's at the vertex level.
-// Unused vertices are discarded and the vertex list order is optimized.
-// However, the actual mesh geometry will not be modified as far as number
-// of faces, vertex positions, vertex normals, etc.
-//
-// Also, since TriMesh doesn't have any notion of parts or materials,
-// that information is lost.
-//
-// The input mesh is not modified.
+    //---------------------------------------------------------------------------
+    // computeBoundingBox
+    //
+    // Compute axially aligned bounding box from vertex list
 
-pub fn fromEditMesh(mesh: &EditTriMesh) {
-int	i;
+    pub fn computeBoundingBox(&mut self) {
+        // Empty bounding box
+        self.bounding_box.empty();
 
-// Make a copy of the mesh
+        // Add in vertex locations
+        for v in self.vertexList.iter() {
+            self.bounding_box.add_vector3(&v.p);
+        }
+    }
 
-EditTriMesh tempMesh(mesh);
+    //---------------------------------------------------------------------------
+    // fromEditMesh
+    //
+    // Convert an EditTriMesh to a TriMesh.  Note that this function may need
+    // to make many logical changes to the mesh, such as ordering of vertices.
+    // Vertices may need to be duplicated to place UV's at the vertex level.
+    // Unused vertices are discarded and the vertex list order is optimized.
+    // However, the actual mesh geometry will not be modified as far as number
+    // of faces, vertex positions, vertex normals, etc.
+    //
+    // Also, since TriMesh doesn't have any notion of parts or materials,
+    // that information is lost.
+    //
+    // The input mesh is not modified.
 
-// Make sure UV's are perperly set at the vertex level
+    pub fn fromEditMesh(&mut self, mesh: &EditTriMesh) {
+        // Make a copy of the mesh
+        let mut tempMesh = mesh.clone();
 
-tempMesh.copyUvsIntoVertices();
+        // Make sure UV's are properly set at the vertex level
+        // tempMesh.copyUvsIntoVertices(); todo: uncomment
 
-// Optimize the order of the vertices for best cache performance.
-// This also discards unused vertices
+        // Optimize the order of the vertices for best cache performance.
+        // This also discards unused vertices
+        // tempMesh.optimizeVertexOrder(); todo: uncomment
 
-tempMesh.optimizeVertexOrder();
+        // Allocate memory
+        // allocateMemory(tempMesh.vertexCount(), tempMesh.triCount());
 
-// Allocate memory
+        // Make sure we have something
 
-allocateMemory(tempMesh.vertexCount(), tempMesh.triCount());
+        if self.triCount < 1 {
+            return;
+        }
 
-// Make sure we have something
+        // Convert vertices
+        for (i, s) in tempMesh.vList.iter().enumerate() {
+            let d = &mut self.vertexList[i];
 
-if (triCount < 1) {
-return;
-}
+            // let rv = RenderVertex {
+            //     p: s.p.clone(),
+            //     n: s.normal.clone(),
+            //     u: s.u,
+            //     v: s.v
+            // };
+            // self.vertexList[i] = rv;
+            //d.p = s.p.clone();
 
-// Convert vertices
+            d.p.copy(&s.p);
+        }
+        /*
+        for (i = 0 ; i < vertexCount ; ++i) {
+        const EditVertex *s = &tempMesh.vertex(i);
+        RenderVertex *d = &vertexList[i];
 
-for (i = 0 ; i < vertexCount ; ++i) {
-const EditVertex *s = &tempMesh.vertex(i);
-RenderVertex *d = &vertexList[i];
+        d->p = s->p;
+        d->n = s->normal;
+        d->u = s->u;
+        d->v = s->v;
+            */
+    }
+    /*
+    // Convert faces
 
-d->p = s->p;
-d->n = s->normal;
-d->u = s->u;
-d->v = s->v;
-}
+    for (i = 0 ; i < triCount ; ++i) {
+    const EditTri *s = &tempMesh.tri(i);
+    RenderTri *d = &triList[i];
+    d->index[0] = s->v[0].index;
+    d->index[1] = s->v[1].index;
+    d->index[2] = s->v[2].index;
+    }
 
-// Convert faces
+    // Make sure bounds are computed
 
-for (i = 0 ; i < triCount ; ++i) {
-const EditTri *s = &tempMesh.tri(i);
-RenderTri *d = &triList[i];
-d->index[0] = s->v[0].index;
-d->index[1] = s->v[1].index;
-d->index[2] = s->v[2].index;
-}
+    computeBoundingBox();
+    }
 
-// Make sure bounds are computed
+    //---------------------------------------------------------------------------
+    // toEditMesh
+    //
+    // Convert a TriMesh to an EditTriMesh.  The output mesh is setup with a
+    // single default part and a single default material.
 
-computeBoundingBox();
-}
-
-//---------------------------------------------------------------------------
-// toEditMesh
-//
-// Convert a TriMesh to an EditTriMesh.  The output mesh is setup with a
-// single default part and a single default material.
-
-void	toEditMesh(EditTriMesh &mesh) const {
-// !FIXME!
-assert(false);
-}
-
-
+    void	toEditMesh(EditTriMesh &mesh) const {
+    // !FIXME!
+    assert(false);
+    }
+    */
 }

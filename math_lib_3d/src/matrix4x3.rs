@@ -711,8 +711,8 @@ impl ops::Mul<&Matrix4x3> for Vector3 {
 //---------------------------------------------------------------------------
 //  Vector *= Matrix4x3
 //
-impl ops::MulAssign<Matrix4x3> for Vector3 {
-    fn mul_assign(&mut self, m: Matrix4x3) {
+impl ops::MulAssign<&Matrix4x3> for Vector3 {
+    fn mul_assign(&mut self, m: &Matrix4x3) {
         self.x = self.x * m.m11 + self.y * m.m21 + self.z * m.m31 + m.tx;
         self.y = self.x * m.m12 + self.y * m.m22 + self.z * m.m32 + m.ty;
         self.z = self.x * m.m13 + self.y * m.m23 + self.z * m.m33 + m.tz;

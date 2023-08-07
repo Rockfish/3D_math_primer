@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 
+use crate::matrix4x3::Matrix4x3;
 use std::ops;
 
 #[derive(Clone, Debug)]
@@ -68,6 +69,12 @@ impl Vector3 {
         }
     }
 
+    pub fn copy(&mut self, other: &Vector3) {
+        self.x = other.x;
+        self.y = other.y;
+        self.z = other.z;
+    }
+
     pub fn normalize(&mut self) {
         let mag_sq = self.x * self.x + self.y * self.y + self.z * self.z;
         if mag_sq > 0.0 {
@@ -115,6 +122,8 @@ impl PartialEq<&Vector3> for &Vector3 {
         (self.x == other.x) && (self.y == other.y) && (self.z == other.z)
     }
 }
+
+// for operator = (assign) in rust use clone()
 
 impl ops::Add<&Vector3> for &Vector3 {
     type Output = Vector3;

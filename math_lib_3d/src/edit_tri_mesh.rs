@@ -1,30 +1,31 @@
 #![allow(dead_code)]
 
+use crate::matrix4x3::Matrix4x3;
 use crate::vector3::Vector3;
+use debug_print::debug_println;
 
 #[derive(Clone, Debug)]
-struct EditTriMesh {
+pub struct EditTriMesh {
     // The mesh lists
     // vAlloc: f32,
     // vCount: f32,
-    vList: Vec<Vertex>,
+    pub vList: Vec<Vertex>,
 
     // tAlloc: i32,
     // tCount: i32,
-    tList: Vec<Tri>,
+    pub tList: Vec<Tri>,
 
     // mCount: i32,
-    mList: Vec<Material>,
+    pub mList: Vec<Material>,
 
     // pCount: i32,
-    pList: Vec<Part>,
-
+    pub pList: Vec<Part>,
 }
 
 #[derive(Clone, Debug)]
 pub struct Vertex {
     // 3D vertex position;
-    p: Vector3,
+    pub p: Vector3,
 
     // Vertex-level texture mapping coordinates.  Notice that
     // these may be invalid at various times.  The "real" UVs
@@ -32,49 +33,49 @@ pub struct Vertex {
     // at the vertex level.  But for many other optimizations,
     // we may need to weld vertices for faces with different
     // UV's.
-    u: f32,
-    v: f32,
+    pub u: f32,
+    pub v: f32,
 
     // vertex-level surface normal.  Again, this is only
     // valid in certain circumstances
-    normal: Vector3,
+    pub normal: Vector3,
 
     // Utility "mark" variable, often handy
-    mark: i32,
+    pub mark: i32,
 }
 
 #[derive(Clone, Debug)]
 pub struct Vert {
-    index: i32,
+    pub index: usize,
     // index into the vertex list
     // mapping coordinates
-    u: f32,
-    v: f32,
+    pub u: f32,
+    pub v: f32,
 }
 
 #[derive(Clone, Debug)]
 pub struct Tri {
     // Face vertices.
-    v: [Vert; 3],
+    pub v: [Vert; 3],
 
     // Surface normal
-    normal: Vector3,
+    pub normal: Vector3,
 
     // Which part does this tri belong to?
-    part: i32,
+    pub part: usize,
 
     // Index into the material list
-    material: i32,
+    pub material: usize,
 
     // Utility "mark" variable, often handy
-    mark: i32,
+    pub mark: i32,
 }
 
 #[derive(Clone, Debug)]
 pub struct Material {
-    diffuseTextureName: String,
+    pub diffuseTextureName: String,
     // Utility "mark" variable, often handy
-    mark: i32,
+    pub mark: i32,
 }
 
 #[derive(Clone, Debug)]
@@ -101,10 +102,10 @@ pub struct OptimizationParameters {
 }
 
 impl Vertex {
-//---------------------------------------------------------------------------
-// Vertex::setDefaults
-//
-// Reset vertex to a default state
+    //---------------------------------------------------------------------------
+    // Vertex::setDefaults
+    //
+    // Reset vertex to a default state
 
     pub fn default() -> Self {
         Vertex {
@@ -139,28 +140,33 @@ impl Tri {
     }
 
     //---------------------------------------------------------------------------
-// Tri::isDegenerate
-//
-// Return true if we are degenerate (any two vertex indices are the same)
+    // Tri::isDegenerate
+    //
+    // Return true if we are degenerate (any two vertex indices are the same)
 
     pub fn isDegenerate(&self) -> bool {
-        return
-            (self.v[0].index == self.v[1].index) ||
-                (self.v[1].index == self.v[2].index) ||
-                (self.v[0].index == self.v[2].index);
+        return (self.v[0].index == self.v[1].index)
+            || (self.v[1].index == self.v[2].index)
+            || (self.v[0].index == self.v[2].index);
     }
 
-//---------------------------------------------------------------------------
-// Tri::findVertex
-//
-// Check if we use the vertex (by index into the master vertex list).  Return
-// the first face vertex index (0..2) if we reference it, or -1 otherwise
+    //---------------------------------------------------------------------------
+    // Tri::findVertex
+    //
+    // Check if we use the vertex (by index into the master vertex list).  Return
+    // the first face vertex index (0..2) if we reference it, or -1 otherwise
 
-    pub fn findVertex(&self, vertexIndex: i32) -> i32 {
+    pub fn findVertex(&self, vertexIndex: usize) -> i32 {
         // Search vertices.  Let's unroll the loop here...
-        if self.v[0].index == vertexIndex { return 0; }
-        if self.v[1].index == vertexIndex { return 1; }
-        if self.v[2].index == vertexIndex { return 2; }
+        if self.v[0].index == vertexIndex {
+            return 0;
+        }
+        if self.v[1].index == vertexIndex {
+            return 1;
+        }
+        if self.v[2].index == vertexIndex {
+            return 2;
+        }
 
         // Not found.
         -1
@@ -209,16 +215,13 @@ impl OptimizationParameters {
     // Pass in a really large number (> 180 degrees) to effectively
     // weld all vertices, regardless of angle tolerance
     pub fn setEdgeAngleToleranceInDegrees(&mut self, degrees: f32) {
-
         // Check for a really big angle
 
-        if (degrees >= 180.0) {
-
+        if degrees >= 180.0 {
             // Slam cosine to very small number
 
             self.cosOfEdgeAngleTolerance = -999.0;
         } else {
-
             // Compute the cosine
             self.cosOfEdgeAngleTolerance = degrees.to_radians().cos();
         }
@@ -226,16 +229,14 @@ impl OptimizationParameters {
 }
 
 impl EditTriMesh {
-
     pub fn default() -> EditTriMesh {
-        EditTriMesh{
+        EditTriMesh {
             vList: vec![],
             tList: vec![],
             mList: vec![],
             pList: vec![],
         }
     }
-
 
     /////////////////////////////////////////////////////////////////////////////
     //
@@ -247,1700 +248,1674 @@ impl EditTriMesh {
     // so you can only modify a non-mesh.
     //
     /////////////////////////////////////////////////////////////////////////////
+    //
+    // pub fn vertexes(&self, vertexIndex: i32) -> Vertex {
+    //     // assert(vertexIndex >= 0);
+    //     // assert(vertexIndex < vCount);
+    //     return self.vList[vertexIndex as usize];
+    // }
+    //
+    // pub fn triangles(&self, triIndex: i32) -> Tri {
+    //     // assert(triIndex >= 0);
+    //     // assert(triIndex < tCount);
+    //     return self.tList[triIndex];
+    // }
+    //
+    // pub fn materials(&self, materialIndex: i32) -> Material {
+    //     // assert(materialIndex >= 0);
+    //     // assert(materialIndex < mCount);
+    //     return self.mList[materialIndex];
+    // }
+    //
+    // pub fn parts(&self, partIndex: i32) -> Part {
+    //     // assert(partIndex >= 0);
+    //     // assert(partIndex < pCount);
+    //     return self.pList[partIndex];
+    // }
 
-    pub fn vertexes(&self, vertexIndex: i32) -> Vertex {
-        // assert(vertexIndex >= 0);
-        // assert(vertexIndex < vCount);
-        return self.vList[vertexIndex];
+    /////////////////////////////////////////////////////////////////////////////
+    //
+    // EditTriMesh members - Basic mesh operations
+    //
+    // All of these functions act like an array operator, returning a reference
+    // to the element.  They provide array bounds checking, and can therefore
+    // catch a number of common bugs.  We have and non-versions,
+    // so you can only modify a non-mesh.
+    //
+    /////////////////////////////////////////////////////////////////////////////
+
+    //---------------------------------------------------------------------------
+    // empty
+    //
+    // Reset the mesh to empty state
+    pub fn empty(&mut self) {
+        self.vList.clear();
+        self.tList.clear();
+        self.mList.clear();
+        self.pList.clear();
     }
-
-    pub fn triangles(&self, triIndex: i32) -> Tri {
-        // assert(triIndex >= 0);
-        // assert(triIndex < tCount);
-        return self.tList[triIndex];
-    }
-
-    pub fn materials(&self, materialIndex: i32) -> Material {
-        // assert(materialIndex >= 0);
-        // assert(materialIndex < mCount);
-        return self.mList[materialIndex];
-    }
-
-    pub fn parts(&self, partIndex: i32) -> Part {
-        // assert(partIndex >= 0);
-        // assert(partIndex < pCount);
-        return self.pList[partIndex];
-    }
-
-
-/////////////////////////////////////////////////////////////////////////////
-//
-// EditTriMesh members - Basic mesh operations
-//
-// All of these functions act like an array operator, returning a reference
-// to the element.  They provide array bounds checking, and can therefore
-// catch a number of common bugs.  We have and non-versions,
-// so you can only modify a non-mesh.
-//
-/////////////////////////////////////////////////////////////////////////////
-
-//---------------------------------------------------------------------------
-// empty
-//
-// Reset the mesh to empty state
-pub fn empty(&mut self) {
-    self.vList.clear();
-    self.tList.clear();
-    self.mList.clear();
-    self.pList.clear();
-}
 
     /* not sure this applies to Rust
-//---------------------------------------------------------------------------
-// setVertexCount
-//
-// Set the vertex count.  If the list is grown, the new vertices at the end
-// are initialized with default values.  If the list is shrunk, any invalid
-// faces are deleted.
+    //---------------------------------------------------------------------------
+    // setVertexCount
+    //
+    // Set the vertex count.  If the list is grown, the new vertices at the end
+    // are initialized with default values.  If the list is shrunk, any invalid
+    // faces are deleted.
 
-pub fn setVertexCount(int vc) {
-assert(vc >= 0);
+    pub fn setVertexCount(int vc) {
+    assert(vc >= 0);
 
-// Make sure we had enough allocated coming in
+    // Make sure we had enough allocated coming in
 
-assert(vCount <= vAlloc);
+    assert(vCount <= vAlloc);
 
-// Check if growing or shrinking the list
+    // Check if growing or shrinking the list
 
-if (vc > vCount) {
+    if (vc > vCount) {
 
-// Check if we need to allocate more
+    // Check if we need to allocate more
 
-if (vc > vAlloc) {
+    if (vc > vAlloc) {
 
-// We need to grow the list.  Figure out the
-// new count.  We don't want to constantly be
-// allocating memory every time a single vertex
-// is added, but yet we don't want to allocate
-// too much memory and be wasteful.  The system
-// shown below seems to be a good compromise.
+    // We need to grow the list.  Figure out the
+    // new count.  We don't want to constantly be
+    // allocating memory every time a single vertex
+    // is added, but yet we don't want to allocate
+    // too much memory and be wasteful.  The system
+    // shown below seems to be a good compromise.
 
-vAlloc = vc * 4 / 3 + 10;
-vList = (Vertex *)::realloc(vList, vAlloc * sizeof(*vList));
+    vAlloc = vc * 4 / 3 + 10;
+    vList = (Vertex *)::realloc(vList, vAlloc * sizeof(*vList));
 
-// Check for out of memory.  You may need more
-// robust error handling...
+    // Check for out of memory.  You may need more
+    // robust error handling...
 
-if (vList == NULL) {
-ABORT("Out of memory");
-}
-}
+    if (vList == NULL) {
+    ABORT("Out of memory");
+    }
+    }
 
-// Initilaize the new vertices
+    // Initilaize the new vertices
 
-while (vCount < vc) {
-vList[vCount].setDefaults();
-++vCount;
-}
+    while (vCount < vc) {
+    vList[vCount].setDefaults();
+    ++vCount;
+    }
 
-} else if (vc < vCount) {
+    } else if (vc < vCount) {
 
-// Shrinking the list.  Go through
-// and mark invalid faces for deletion
+    // Shrinking the list.  Go through
+    // and mark invalid faces for deletion
 
-for (int i = 0 ; i < triCount() ; ++i) {
-Tri *t = &tri(i);
-if (
-(t->v[0].index >= vc) ||
-(t->v[1].index >= vc) ||
-(t->v[2].index >= vc)
-) {
+    for (int i = 0 ; i < triCount() ; ++i) {
+    Tri *t = &tri(i);
+    if (
+    (t->v[0].index >= vc) ||
+    (t->v[1].index >= vc) ||
+    (t->v[2].index >= vc)
+    ) {
 
-// Mark it for deletion
+    // Mark it for deletion
 
-t->mark = 1;
+    t->mark = 1;
 
-} else {
+    } else {
 
-// It's OK
+    // It's OK
 
-t->mark = 0;
-}
-}
+    t->mark = 0;
+    }
+    }
 
-// Delete the marked triangles
+    // Delete the marked triangles
 
-deleteMarkedTris(1);
+    deleteMarkedTris(1);
 
-// Set the new count.  Any extra memory is
-// wasted for now...
+    // Set the new count.  Any extra memory is
+    // wasted for now...
 
-vCount = vc;
-}
+    vCount = vc;
+    }
 
-}
+    }
 
 
-//---------------------------------------------------------------------------
-// setTriCount
-//
-// Set the triangle count.  If the list is grown, the new triangles at the
-// end are initialized with default values.
+    //---------------------------------------------------------------------------
+    // setTriCount
+    //
+    // Set the triangle count.  If the list is grown, the new triangles at the
+    // end are initialized with default values.
 
-pub fn setTriCount(int tc) {
-assert(tc >= 0);
+    pub fn setTriCount(int tc) {
+    assert(tc >= 0);
 
-// Make sure we had enough allocated coming in
+    // Make sure we had enough allocated coming in
 
-assert(tCount <= tAlloc);
+    assert(tCount <= tAlloc);
 
-// Check if we are growing the list
+    // Check if we are growing the list
 
-if (tc > tCount) {
+    if (tc > tCount) {
 
-// Check if we need to allocate more
+    // Check if we need to allocate more
 
-if (tc > tAlloc) {
+    if (tc > tAlloc) {
 
-// We need to grow the list.  Figure out the
-// new count.  We don't want to constantly be
-// allocating memory every time a single tri
-// is added, but yet we don't want to allocate
-// too much memory and be wasteful.  The system
-// shown below seems to be a good compromise.
+    // We need to grow the list.  Figure out the
+    // new count.  We don't want to constantly be
+    // allocating memory every time a single tri
+    // is added, but yet we don't want to allocate
+    // too much memory and be wasteful.  The system
+    // shown below seems to be a good compromise.
 
-tAlloc = tc * 4 / 3 + 10;
-tList = (Tri *)::realloc(tList, tAlloc * sizeof(*tList));
+    tAlloc = tc * 4 / 3 + 10;
+    tList = (Tri *)::realloc(tList, tAlloc * sizeof(*tList));
 
-// Check for out of memory.  You may need more
-// robust error handling...
+    // Check for out of memory.  You may need more
+    // robust error handling...
 
-if (tList == NULL) {
-ABORT("Out of memory");
-}
-}
+    if (tList == NULL) {
+    ABORT("Out of memory");
+    }
+    }
 
-// Initilaize the new triangles
+    // Initilaize the new triangles
 
-while (tCount < tc) {
-tList[tCount].setDefaults();
-++tCount;
-}
-} else {
+    while (tCount < tc) {
+    tList[tCount].setDefaults();
+    ++tCount;
+    }
+    } else {
 
-// Set the new count.  Any extra memory is
-// wasted for now...
+    // Set the new count.  Any extra memory is
+    // wasted for now...
 
-tCount = tc;
-}
-}
+    tCount = tc;
+    }
+    }
 
-//---------------------------------------------------------------------------
-// setMaterialCount
-//
-// Set the material count.  If the list is grown, the new materials at the end
-// are initialized with default values.  If the list is shrunk, any invalid
-// faces are deleted.
+    //---------------------------------------------------------------------------
+    // setMaterialCount
+    //
+    // Set the material count.  If the list is grown, the new materials at the end
+    // are initialized with default values.  If the list is shrunk, any invalid
+    // faces are deleted.
 
-pub fn setMaterialCount(int mc) {
-assert(mc >= 0);
+    pub fn setMaterialCount(int mc) {
+    assert(mc >= 0);
 
-// Check if growing or shrinking the list
+    // Check if growing or shrinking the list
 
-if (mc > mCount) {
+    if (mc > mCount) {
 
-// Grow the list.  For materials, we don't have any fancy
-// allocation like we do for the vertices and triangles.
+    // Grow the list.  For materials, we don't have any fancy
+    // allocation like we do for the vertices and triangles.
 
-mList = (Material *)::realloc(mList, mc * sizeof(*mList));
+    mList = (Material *)::realloc(mList, mc * sizeof(*mList));
 
-// Check for out of memory.  You may need more
-// robust error handling...
+    // Check for out of memory.  You may need more
+    // robust error handling...
 
-if (mList == NULL) {
-ABORT("Out of memory");
-}
+    if (mList == NULL) {
+    ABORT("Out of memory");
+    }
 
-// Initilaize the new materials
+    // Initilaize the new materials
 
-while (mCount < mc) {
-mList[mCount].setDefaults();
-++mCount;
-}
+    while (mCount < mc) {
+    mList[mCount].setDefaults();
+    ++mCount;
+    }
 
-} else if (mc < mCount) {
+    } else if (mc < mCount) {
 
-// Shrinking the list.  Go through
-// and mark invalid faces for deletion
+    // Shrinking the list.  Go through
+    // and mark invalid faces for deletion
 
-for (int i = 0 ; i < triCount() ; ++i) {
-Tri *t = &tri(i);
-if (t->material >= mc) {
+    for (int i = 0 ; i < triCount() ; ++i) {
+    Tri *t = &tri(i);
+    if (t->material >= mc) {
 
-// Mark it for deletion
+    // Mark it for deletion
 
-t->mark = 1;
+    t->mark = 1;
 
-} else {
+    } else {
 
-// It's OK
+    // It's OK
 
-t->mark = 0;
-}
-}
+    t->mark = 0;
+    }
+    }
 
-// Delete the marked triangles
+    // Delete the marked triangles
 
-deleteMarkedTris(1);
+    deleteMarkedTris(1);
 
-// Set the new count.  For now, no need to
-// shrink the list.  We'll just waste it.
+    // Set the new count.  For now, no need to
+    // shrink the list.  We'll just waste it.
 
-mCount = mc;
-}
+    mCount = mc;
+    }
 
-}
+    }
 
-//---------------------------------------------------------------------------
-// setPartCount
-//
-// Set the part count.  If the list is grown, the new parts at the end
-// are initialized with default values.  If the list is shrunk, any invalid
-// faces are deleted.
+    //---------------------------------------------------------------------------
+    // setPartCount
+    //
+    // Set the part count.  If the list is grown, the new parts at the end
+    // are initialized with default values.  If the list is shrunk, any invalid
+    // faces are deleted.
 
-pub fn setPartCount(int pc) {
-assert(pc >= 0);
+    pub fn setPartCount(int pc) {
+    assert(pc >= 0);
 
-// Check if growing or shrinking the list
+    // Check if growing or shrinking the list
 
-if (pc > pCount) {
+    if (pc > pCount) {
 
-// Grow the list.  For parts, we don't have any fancy
-// allocation like we do for the vertices and triangles.
+    // Grow the list.  For parts, we don't have any fancy
+    // allocation like we do for the vertices and triangles.
 
-pList = (Part *)::realloc(pList, pc * sizeof(*pList));
+    pList = (Part *)::realloc(pList, pc * sizeof(*pList));
 
-// Check for out of memory.  You may need more
-// robust error handling...
+    // Check for out of memory.  You may need more
+    // robust error handling...
 
-if (pList == NULL) {
-ABORT("Out of memory");
-}
+    if (pList == NULL) {
+    ABORT("Out of memory");
+    }
 
-// Initilaize the new parts
+    // Initilaize the new parts
 
-while (pCount < pc) {
-pList[pCount].setDefaults();
-++pCount;
-}
+    while (pCount < pc) {
+    pList[pCount].setDefaults();
+    ++pCount;
+    }
 
-} else if (pc < pCount) {
+    } else if (pc < pCount) {
 
-// Shrinking the list.  Go through
-// and mark invalid faces for deletion
+    // Shrinking the list.  Go through
+    // and mark invalid faces for deletion
 
-for (int i = 0 ; i < triCount() ; ++i) {
-Tri *t = &tri(i);
-if (t->part >= pc) {
+    for (int i = 0 ; i < triCount() ; ++i) {
+    Tri *t = &tri(i);
+    if (t->part >= pc) {
 
-// Mark it for deletion
+    // Mark it for deletion
 
-t->mark = 1;
+    t->mark = 1;
 
-} else {
+    } else {
 
-// It's OK
+    // It's OK
 
-t->mark = 0;
-}
-}
+    t->mark = 0;
+    }
+    }
 
-// Delete the marked triangles
+    // Delete the marked triangles
 
-deleteMarkedTris(1);
+    deleteMarkedTris(1);
 
-// Set the new count.  For now, no need to
-// shrink the list.  We'll just waste it.
+    // Set the new count.  For now, no need to
+    // shrink the list.  We'll just waste it.
 
-pCount = pc;
-}
+    pCount = pc;
+    }
 
-}
-     */
+    }
+         */
 
-//---------------------------------------------------------------------------
-// addTri
-//
-// Add a new, default triangle.  The index of the new item is returned
+    //---------------------------------------------------------------------------
+    // addTri
+    //
+    // Add a new, default triangle.  The index of the new item is returned
 
-pub fn addDefaultTri(&mut self) -> i32 {
-    self.tList.push(Tri::default());
-    (self.tList.len() - 1) as i32
-}
-    
+    pub fn addDefaultTri(&mut self) -> i32 {
+        self.tList.push(Tri::default());
+        (self.tList.len() - 1) as i32
+    }
+
     pub fn addTri(&mut self, tri: Tri) -> i32 {
         self.tList.push(tri);
         (self.tList.len() - 1) as i32
-    } 
+    }
 
     pub fn addDefaultVertex(&mut self) -> i32 {
         self.vList.push(Vertex::default());
-            (self.vList.len() - 1) as i32
+        (self.vList.len() - 1) as i32
     }
 
     pub fn addVertex(&mut self, vertex: Vertex) -> i32 {
         self.vList.push(vertex);
-            (self.vList.len() - 1) as i32
+        (self.vList.len() - 1) as i32
     }
 
-//---------------------------------------------------------------------------
-// dupVertex
-//
-// Add a duplicate of a vertex to the end of the list.
-pub fn dupVertex(&mut self, srcVertexIndex: i32) -> i32 {
-    let dup = self.vList[srcVertexIndex].clone();
-    self.vList.push(dup);
-    (self.vList.len() - 1) as i32;
-}
-
-//---------------------------------------------------------------------------
-// addMaterial
-//
-// Add a material to the end of the list.
-pub fn addMaterial(&mut self, m: Material) -> i32 {
-    self.mList.push(m);
-    (self.mList.len() - 1) as i32
-}
-
-//---------------------------------------------------------------------------
-// addPart
-//
-// Add a part to the end of the list.
-pub fn	addPart(&mut self, p: Part) -> i32 {
-    self.pList.push(p);
-    (self.pList.len() - 1) as i32
-}
-
-//---------------------------------------------------------------------------
-// markAllVertices
-//
-// Mark all vertices with the given value
-pub fn	markAllVertices(&self, mark: i32) {
-    for mut v in self.vList {
-        v.mark = mark;
+    //---------------------------------------------------------------------------
+    // dupVertex
+    //
+    // Add a duplicate of a vertex to the end of the list.
+    pub fn dupVertex(&mut self, srcVertexIndex: i32) -> i32 {
+        let dup = self.vList[srcVertexIndex as usize].clone();
+        self.vList.push(dup);
+        (self.vList.len() - 1) as i32
     }
-}
 
-//---------------------------------------------------------------------------
-// markAllTris
-//
-// Mark all triangles with the given value
-pub fn markAllTris(&self, mark: i32) {
-        for mut t in self.tList {
+    //---------------------------------------------------------------------------
+    // addMaterial
+    //
+    // Add a material to the end of the list.
+    pub fn addMaterial(&mut self, m: Material) -> i32 {
+        self.mList.push(m);
+        (self.mList.len() - 1) as i32
+    }
+
+    //---------------------------------------------------------------------------
+    // addPart
+    //
+    // Add a part to the end of the list.
+    pub fn addPart(&mut self, p: Part) -> i32 {
+        self.pList.push(p);
+        (self.pList.len() - 1) as i32
+    }
+
+    //---------------------------------------------------------------------------
+    // markAllVertices
+    //
+    // Mark all vertices with the given value
+    pub fn markAllVertices(&mut self, mark: i32) {
+        for v in self.vList.iter_mut() {
+            v.mark = mark;
+        }
+    }
+
+    //---------------------------------------------------------------------------
+    // markAllTris
+    //
+    // Mark all triangles with the given value
+    pub fn markAllTris(&mut self, mark: i32) {
+        for t in self.tList.iter_mut() {
             t.mark = mark;
         }
-}
-
-//---------------------------------------------------------------------------
-// markAllMaterials
-//
-// Mark all materials with the given value
-pub fn markAllMaterials(&self, mark: i32) {
-    for mut m in self.mList {
-        m.mark = mark;
     }
-}
 
-//---------------------------------------------------------------------------
-// markAllParts
-//
-// Mark all parts with the given value
-pub fn markAllParts(&self, mark: i32) {
-    for mut p in self.pList {
-        p.mark = mark;
-    }
-}
-
-//---------------------------------------------------------------------------
-// deleteVertex
-//
-// Deletes one vertex from the vertex list.  This will fixup vertex
-// indices in the triangles, and also delete triangles that referenced
-// that vertex
-
-pub fn deleteVertex(&mut self, vertexIndex: i32) {
-
-// Check index.  Warn in debug build, don't crash release
-if (vertexIndex < 0) || (vertexIndex >= self.vList.len() as i32) {
-    debug_assert!(false, format!("vertexIndex out of range: {}", vertexIndex));
-    return;
-}
-
-// Scan triangle list and fixup vertex indices
-    for mut t in self.tList {
-        for mut v in t.v {
-            // mark Tri for deletion is it uses the vert that is going to be deleted
-            if v.index == vertexIndex {
-                t.mark = 1;
-                break;
-            }
-            // Fix up the vert indexes of vertexes after the deleted vertex
-            if v.index > vertexIndex {
-                v.index -= 1;
-            }
+    //---------------------------------------------------------------------------
+    // markAllMaterials
+    //
+    // Mark all materials with the given value
+    pub fn markAllMaterials(&mut self, mark: i32) {
+        for m in self.mList.iter_mut() {
+            m.mark = mark;
         }
     }
 
-    self.vList.remove(vertexIndex as usize);
-
-    self.deleteMarkedTris(1);
-}
-
-//---------------------------------------------------------------------------
-// deleteTri
-//
-// Deletes one triangle from the triangle list.
-
-pub fn deleteTri(&mut self, triIndex: i32) {
-
-// Check index.  Warn in debug build, don't crash release
-    if (triIndex < 0) || (triIndex >= self.vList.len() as i32) {
-        debug_assert!(false, format!("triIndex out of range: {}", triIndex));
-        return;
+    //---------------------------------------------------------------------------
+    // markAllParts
+    //
+    // Mark all parts with the given value
+    pub fn markAllParts(&mut self, mark: i32) {
+        for p in self.pList.iter_mut() {
+            p.mark = mark;
+        }
     }
 
-// Delete it
-    self.tList.remove(triIndex as usize);
-}
+    //---------------------------------------------------------------------------
+    // deleteVertex
+    //
+    // Deletes one vertex from the vertex list.  This will fixup vertex
+    // indices in the triangles, and also delete triangles that referenced
+    // that vertex
 
-//---------------------------------------------------------------------------
-// deleteMaterial
-//
-// Deletes one material from the material list.  Material indices in
-// the triangles are fixed up and any triangles that used that material
-// are deleted
+    pub fn deleteVertex(&mut self, vertexIndex: usize) {
+        // Check index.  Warn in debug build, don't crash release
+        if (vertexIndex < 0) || (vertexIndex >= self.vList.len()) {
+            debug_assert!(
+                false,
+                "{}",
+                format!("vertexIndex out of range: {}", vertexIndex)
+            );
+            return;
+        }
 
-pub fn deleteMaterial(&mut self, materialIndex: i32) {
-
-    // Check index.  Warn in debug build, don't crash release
-    if (materialIndex < 0) || (materialIndex >= self.vList.len() as i32) {
-        debug_assert!(false, format!("materialIndex out of range: {}", materialIndex));
-        return;
-    }
-
-    // Scan triangle list and fixup material indices
-    for mut tri in self.tList {
-        if tri.material == materialIndex {
-            tri.mark = 1;
-        } else {
-            tri.mark = 0;
-            if tri.material > materialIndex {
-                tri.material -= 1;
+        // Scan triangle list and fixup vertex indices
+        for t in self.tList.iter_mut() {
+            for v in t.v.iter_mut() {
+                // mark Tri for deletion is it uses the vert that is going to be deleted
+                if v.index == vertexIndex {
+                    t.mark = 1;
+                    break;
+                }
+                // Fix up the vert indexes of vertexes after the deleted vertex
+                if v.index > vertexIndex {
+                    v.index -= 1;
+                }
             }
         }
+
+        self.vList.remove(vertexIndex as usize);
+
+        self.deleteMarkedTris(1);
     }
 
-    self.mList.remove(materialIndex as usize);
+    //---------------------------------------------------------------------------
+    // deleteTri
+    //
+    // Deletes one triangle from the triangle list.
 
-    self.deleteMarkedTris(1);
-}
+    pub fn deleteTri(&mut self, triIndex: i32) {
+        // Check index.  Warn in debug build, don't crash release
+        if (triIndex < 0) || (triIndex >= self.vList.len() as i32) {
+            debug_assert!(false, "{}", format!("triIndex out of range: {}", triIndex));
+            return;
+        }
 
-//---------------------------------------------------------------------------
-// deletePart
-//
-// Deletes one part from the part list.  Part indices in the triangles are
-// fixed up and any triangles from that part are deleted
-
-pub fn deletePart(&mut self, partIndex: i32) {
-
-    // Check index.  Warn in debug build, don't crash release
-    if (partIndex < 0) || (partIndex >= self.vList.len() as i32) {
-        debug_assert!(false, format!("partIndex out of range: {}", partIndex));
-        return;
+        // Delete it
+        self.tList.remove(triIndex as usize);
     }
 
-    // Scan triangle list and fixup part indices
-    for mut tri in self.tList {
-        if tri.part == partIndex {
-            tri.mark = 1;
-        } else {
-            tri.mark = 0;
-            if tri.material > partIndex {
-                tri.material -= 1;
+    //---------------------------------------------------------------------------
+    // deleteMaterial
+    //
+    // Deletes one material from the material list.  Material indices in
+    // the triangles are fixed up and any triangles that used that material
+    // are deleted
+
+    pub fn deleteMaterial(&mut self, materialIndex: usize) {
+        // Check index.  Warn in debug build, don't crash release
+        if (materialIndex < 0) || (materialIndex >= self.vList.len()) {
+            debug_assert!(
+                false,
+                "{}",
+                format!("materialIndex out of range: {}", materialIndex)
+            );
+            return;
+        }
+
+        // Scan triangle list and fixup material indices
+        for tri in self.tList.iter_mut() {
+            if tri.material == materialIndex {
+                tri.mark = 1;
+            } else {
+                tri.mark = 0;
+                if tri.material > materialIndex {
+                    tri.material -= 1;
+                }
             }
         }
+
+        self.mList.remove(materialIndex as usize);
+
+        self.deleteMarkedTris(1);
     }
 
-    self.pList.remove(partIndex as usize);
+    //---------------------------------------------------------------------------
+    // deletePart
+    //
+    // Deletes one part from the part list.  Part indices in the triangles are
+    // fixed up and any triangles from that part are deleted
 
-    self.deleteMarkedTris(1);
-}
-
-//---------------------------------------------------------------------------
-// deleteUnusedMaterials
-//
-// Scan list of materials and delete any that are not used by any triangles
-//
-// This method may seem a little more complicated, but it operates
-// in linear time with respect to the number of triangles.
-// Other methods will run in quadratic time or worse.
-
-pub fn deleteUnusedMaterials(&mut self) {
-
-    // Assume all materials will be unused
-    self.markAllMaterials(0);
-
-    // Scan triangle list and mark referenced materials
-    for tri in self.tList {
-        self.material[tri.material].mark = 1;
-    }
-
-    // OK, figure out how many materials there will be,
-    // and where they will go int he new material list,
-    // after the unused ones are removed
-
-    let mut newMaterialCount = 0;
-
-    for mut m in self.mList {
-        // Was it used?
-        if m.mark == 0 {
-            // No - mark it to be whacked
-            m.mark = -1;
-        } else {
-            m.mark = newMaterialCount;
-            newMaterialCount += 1;
+    pub fn deletePart(&mut self, partIndex: usize) {
+        // Check index.  Warn in debug build, don't crash release
+        if (partIndex < 0) || (partIndex >= self.vList.len()) {
+            debug_assert!(
+                false,
+                "{}",
+                format!("partIndex out of range: {}", partIndex)
+            );
+            return;
         }
-    }
 
-    // Check if nothing got deleted, then don't bother with the
-    // rest of this
-    if newMaterialCount == self.mList.len() as i32 {
-        return;
-    }
-
-    // Fixup indices in the face list
-    for mut tri in self.tList {
-        tri.material = self.mList[tri.material].mark;
-    }
-
-    // Remove the empty spaces from the material list
-    let mut destMaterialIndex = 0;
-
-    for (i, mut m) in self.mList.iter().enumerate() {
-        if m.mark != -1 {
-            debug_assert!(m.mark == destMaterialIndex, format!("destMaterialIndex does not match mark."));
-            if i != destMaterialIndex as usize {
-                // Todo: does this work as expected?
-                self.mList[destMaterialIndex] = m;
+        // Scan triangle list and fixup part indices
+        for tri in self.tList.iter_mut() {
+            if tri.part == partIndex {
+                tri.mark = 1;
+            } else {
+                tri.mark = 0;
+                if tri.material > partIndex {
+                    tri.material -= 1;
+                }
             }
-            destMaterialIndex += 1;
         }
+
+        self.pList.remove(partIndex as usize);
+
+        self.deleteMarkedTris(1);
     }
 
-    assert_eq!(
-        destMaterialIndex,
-        newMaterialCount,
-        format!("destMaterialIndex: '{}' and newMaterialCount: '{}' should match.", destMaterialIndex, newMaterialCount)
-    );
+    //---------------------------------------------------------------------------
+    // deleteUnusedMaterials
+    //
+    // Scan list of materials and delete any that are not used by any triangles
+    //
+    // This method may seem a little more complicated, but it operates
+    // in linear time with respect to the number of triangles.
+    // Other methods will run in quadratic time or worse.
 
-    // Remove the extra entries at the end of the list
-    // todo: verify the trimming of the tail of the material list after deletion of marked materials
-    for i in (destMaterialIndex + 1)..self.mList.len() {
-       self.mList.remove(i as usize);
-    }
-}
+    pub fn deleteUnusedMaterials(&mut self) {
+        // Assume all materials will be unused
+        self.markAllMaterials(0);
 
-//---------------------------------------------------------------------------
-// deleteEmptyParts
-//
-// Scan list of parts and delete any that do not contain any triangles
-//
-// This method may seem a little more complicated, but it operates
-// in linear time with respect to the number of triangles.
-// Other methods will run in quadratic time or worse.
-
-pub fn deleteEmptyParts(&mut self) {
-
-    // Assume all parts will be empty
-    self.markAllParts(0);
-
-// Scan triangle list and mark referenced parts
-   for tri in self.tList {
-       self.pList(tri.part).mark = 1;
-   }
-
-    // OK, figure out how many parts there will be,
-    // and where they will go int he new part list,
-    // after the unused ones are removed
-
-    let mut newPartCount = 0;
-
-    for mut p in self.pList {
-        // Was it used?
-        if p.mark == 0 {
-        // No - mark it to be whacked
-            p.mark = -1;
-        } else {
-           p.mark = newPartCount;
-            newPartCount += 1;
+        // Scan triangle list and mark referenced materials
+        for tri in self.tList.iter_mut() {
+            self.mList[tri.material].mark = 1;
         }
-    }
 
-    // Check if nothing got deleted, then don't bother with the
-    // rest of this
-    if newPartCount == self.pList.len() as i32 {
-        return;
-    }
+        // OK, figure out how many materials there will be,
+        // and where they will go int he new material list,
+        // after the unused ones are removed
 
-    // Fixup indices in the face list
-    for mut tri in self.tList {
-        tri.part = self.pList[tri.part].mark;
-    }
+        let initial_material_count = self.mList.len();
+        let mut new_material_count: usize = 0;
 
-    // Remove the empty spaces from the part list
-
-    let mut destPartIndex = 0;
-
-    for (i, mut p) in self.pList {
-        if p.mark != -1 {
-            debug_assert!(p.mark == destPartIndex, format!("destPartIndex does not match mark."));
-            if i != destPartIndex as usize {
-                self.pList[destPartIndex] = p;
+        for m in self.mList.iter_mut() {
+            // Was it used?
+            if m.mark == 0 {
+                // No - mark it to be whacked
+                m.mark = -1;
+            } else {
+                m.mark = new_material_count as i32;
+                new_material_count += 1;
             }
-            destPartIndex += 1;
+        }
+
+        // Check if nothing got deleted, then don't bother with the
+        // rest of this
+        if new_material_count == self.mList.len() {
+            return;
+        }
+
+        // Fixup indices in the face list
+        for tri in self.tList.iter_mut() {
+            tri.material = self.mList[tri.material].mark as usize;
+        }
+
+        // Remove the empty spaces from the material list
+
+        let extracted_material_count = self.mList.extract_if(|m| -> bool { m.mark == -1 }).count();
+
+        /*
+        let mut dest_material_index = 0;
+        for (i, mut m) in self.mList.iter().enumerate() {
+            if m.mark != -1 {
+                debug_assert!(m.mark == dest_material_index, "{}",format!("dest_material_index does not match mark."));
+                if i != dest_material_index as usize {
+                    // Todo: does this work as expected?
+                    self.mList[dest_material_index as usize] = *m;
+                }
+                dest_material_index += 1;
+            }
+        }
+         */
+
+        assert_eq!(
+            initial_material_count - extracted_material_count,
+            new_material_count,
+            "{}",
+            format!(
+                "initial_material_count - extracted_material_count: '{}' and new_material_count: '{}' should match.",
+                extracted_material_count, new_material_count
+            )
+        );
+
+        // Remove the extra entries at the end of the list
+        // todo: verify the trimming of the tail of the material list after deletion of marked materials
+        // for i in (dest_material_index + 1)..self.mList.len() {
+        //    self.mList.remove(i as usize);
+        // }
+    }
+
+    //---------------------------------------------------------------------------
+    // deleteEmptyParts
+    //
+    // Scan list of parts and delete any that do not contain any triangles
+    //
+    // This method may seem a little more complicated, but it operates
+    // in linear time with respect to the number of triangles.
+    // Other methods will run in quadratic time or worse.
+
+    pub fn deleteEmptyParts(&mut self) {
+        // Assume all parts will be empty
+        self.markAllParts(0);
+
+        // Scan triangle list and mark referenced parts
+        for tri in self.tList.iter_mut() {
+            self.pList[tri.part].mark = 1;
+        }
+
+        // OK, figure out how many parts there will be,
+        // and where they will go int he new part list,
+        // after the unused ones are removed
+
+        let initial_part_count = self.pList.len();
+        let mut new_part_count: usize = 0;
+
+        for p in self.pList.iter_mut() {
+            // Was it used?
+            if p.mark == 0 {
+                // No - mark it to be whacked
+                p.mark = -1;
+            } else {
+                p.mark = new_part_count as i32;
+                new_part_count += 1;
+            }
+        }
+
+        // Check if nothing got deleted, then don't bother with the
+        // rest of this
+        if new_part_count == self.pList.len() {
+            return;
+        }
+
+        // Fixup indices in the face list
+        for tri in self.tList.iter_mut() {
+            tri.part = self.pList[tri.part].mark as usize;
+        }
+
+        // Remove the empty spaces from the part list
+
+        let extracted_count = self.pList.extract_if(|p| -> bool { p.mark == -1 }).count();
+
+        //let mut destPartIndex: usize = 0;
+        //
+        // for (i, mut p) in self.pList.iter().enumerate() {
+        //     if p.mark != -1 {
+        //         debug_assert!(p.mark == destPartIndex as i32, "{}", format!("destPartIndex does not match mark."));
+        //         if i != destPartIndex as usize {
+        //             self.pList[destPartIndex] = p;
+        //         }
+        //         destPartIndex += 1;
+        //     }
+        // }
+        //
+        assert_eq!(
+            initial_part_count - extracted_count,
+            new_part_count,
+            "{}",
+            format!(
+                "initial_part_count - extracted_count: '{}' and new_part_count: '{}' should match.",
+                extracted_count, new_part_count
+            )
+        );
+
+        // Remove the extra entries at the end of the list
+        // todo: verify the trimming of the tail of the material list after deletion of marked materials
+        // for i in (new_part_count + 1)..self.pList.len() {
+        //     self.mList.remove(i as usize);
+        // }
+    }
+
+    //---------------------------------------------------------------------------
+    // deleteMarkedTris
+    //
+    // Scan triangle list, deleting triangles with the given mark
+
+    pub fn deleteMarkedTris(&mut self, mark: i32) {
+        // Scan triangle list, and move triangles forward to
+        // suck up the "holes" left by deleted triangles
+        let extracted_count = self
+            .tList
+            .extract_if(|t| -> bool { t.mark == mark })
+            .count();
+        debug_println!("deleted tri count: {}", extracted_count);
+    }
+
+    //---------------------------------------------------------------------------
+    // deleteDegenerateTris
+    //
+    // Scan triangle list and remove "degenerate" triangles.  See
+    // isDegenerate() for the definition of "degenerate" in this case.
+    pub fn deleteDegenerateTris(&mut self) {
+        let extracted_count = self
+            .tList
+            .extract_if(|t| -> bool { t.isDegenerate() })
+            .count();
+        debug_println!("deleted degenerate tri count: {}", extracted_count);
+    }
+
+    //---------------------------------------------------------------------------
+    // detachAllFaces
+    //
+    // Detach all the faces from one another. This creates a new vertex list,
+    // with each vertex only used by one triangle. Simultaneously, unused
+    // vertices are removed.
+    pub fn detachAllFaces(&mut self) {
+        // Check if we don't have any faces, then bail now.
+        // This saves us a crash with a spurrious "out of memory"
+        if self.tList.is_empty() {
+            return;
+        }
+
+        // Figure out how many triangles we'll have
+
+        let newVertexCount = self.tList.len() * 3;
+
+        // Allocate a new vertex list
+        let mut newVertexList: Vec<Vertex> = Vec::with_capacity(newVertexCount);
+
+        for i in 0..newVertexCount {
+            newVertexList.push(Vertex::default());
+        }
+
+        // Scan the triangle list and fill it in
+        for (i, t) in self.tList.iter_mut().enumerate() {
+            // Process the three vertices on this face
+            for j in 0..3 {
+                // Get source and destination vertex indices
+                let s_index = t.v[j].index;
+                let d_index = i * 3 + j;
+
+                let new_v = &mut newVertexList[d_index];
+                let old_v: &Vertex = &self.vList[s_index];
+
+                // Copy the vertex
+                new_v.p.copy(&old_v.p);
+                new_v.normal.copy(&old_v.normal);
+                new_v.u = old_v.u;
+                new_v.v = old_v.v;
+
+                t.v[j].index = d_index;
+            }
+        }
+
+        // Install the new one
+        self.vList = newVertexList;
+    }
+
+    //---------------------------------------------------------------------------
+    // transformVertices
+    //
+    // Transform all the vertices.  We could transform the surface normals,
+    // but they may not even be valid, anyway.  If you need them, compute them.
+    pub fn transformVertices(&mut self, m: &Matrix4x3) {
+        for vertex in self.vList.iter_mut() {
+            vertex.p *= m;
         }
     }
 
-    assert_eq!(
-        destPartIndex,
-        newPartCount,
-        format!("destPartIndex: '{}' and newPartCount: '{}' should match.", destPartIndex, newPartCount)
-    );
+    //---------------------------------------------------------------------------
+    // extractParts
+    //
+    // Extract each part into a seperate mesh.  Each resulting mesh will
+    // have exactly one part
 
-    // Remove the extra entries at the end of the list
-    // todo: verify the trimming of the tail of the material list after deletion of marked materials
-    for i in (newPartCount + 1)..self.pList.len() {
-        self.mdestMaterialIndexList.remove(i as usize);
+    pub fn extractParts(&mut self, meshes: &mut Vec<EditTriMesh>) {
+
+    // !SPEED! This function will run in O(partCount * triCount).
+    // We could optimize it somewhat by having the triangles sorted by
+    // part.  However, any real optimization would be considerably
+    // more complicated.  Let's just keep it simple.
+
+    // Scan through each part
+/*
+        for dMesh in meshes.iter_mut() {
+            self.markAllVertices(-1);
+            self.markAllMaterials(-1);
+
+
+            dMesh.empty();
+            dMesh.setPartCount(1);
+            dMesh.pList = self.pList
+        }
+
+    for (int partIndex = 0 ; partIndex < partCount() ; ++partIndex) {
+
+    // Get shortcut to destination mesh
+
+    EditTriMesh *dMesh = &meshes[partIndex];
+
+    // Mark all vertices and materials, assuming they will
+    // not be used by this part
+
+    markAllVertices(-1);
+    markAllMaterials(-1);
+
+    // Setup the destination part mesh with a single part
+
+    dMesh->empty();
+    dMesh->setPartCount(1);
+    dMesh->part(0) = part(partIndex);
+
+    // Convert face list, simultaneously building material and
+    // vertex list
+
+    for (int faceIndex = 0 ; faceIndex < triCount() ; ++faceIndex) {
+
+    // Fetch shortcut, make sure it belongs to this
+    // part
+
+    Tri *tPtr = &tri(faceIndex);
+    if (tPtr->part != partIndex) {
+    continue;
     }
-}
-
-//---------------------------------------------------------------------------
-// deleteMarkedTris
-//
-// Scan triangle list, deleting triangles with the given mark
-
-pub fn deleteMarkedTris(int mark) {
-
-// Scan triangle list, and move triangles forward to
-// suck up the "holes" left by deleted triangles
-
-int	destTriIndex = 0;
-for (int i = 0 ; i < triCount() ; ++i) {
-Tri *t = &tri(i);
-
-// Is it staying?
-
-if (t->mark != mark) {
-if (destTriIndex != i) {
-tri(destTriIndex) = *t;
-}
-++destTriIndex;
-}
-}
-
-// Set new triangle count
-
-setTriCount(destTriIndex);
-}
-
-//---------------------------------------------------------------------------
-// deleteDegenerateTris
-//
-// Scan triangle list and remove "degenerate" triangles.  See
-// isDegenerate() for the defininition of "degenerate" in this case.
-
-pub fn deleteDegenerateTris() {
-
-// Scan triangle list, marking the bad ones
-
-for (int i = 0 ; i < triCount() ; ++i) {
-Tri *t = &tri(i);
-
-// Is it bogus?
-
-if (t->isDegenerate()) {
-
-// Mark it to be whacked
-
-t->mark = 1;
-
-} else {
-
-// Keep it
-
-t->mark = 0;
-}
-}
-
-// Delete the bad triangles that we found
-
-deleteMarkedTris(1);
-}
-
-//---------------------------------------------------------------------------
-// detachAllFaces
-//
-// Detach all the faces from one another.  This creates a new vertex list,
-// with each vertex only used by one triangle.  Simultaneously, unused
-// vertices are removed.
-
-pub fn detachAllFaces() {
-
-// Check if we don't have any faces, then bail now.
-// This saves us a crash with a spurrious "out of memory"
-
-if (triCount() < 1) {
-return;
-}
-
-// Figure out how many triangles we'll have
-
-int	newVertexCount = triCount() * 3;
-
-// Allocate a new vertex list
 
-Vertex *newVertexList = (Vertex *)::malloc(newVertexCount * sizeof(Vertex));
+    // Make a copy
 
-// Check for out of memory.  You may need more
-// robust error handling...
+    Tri t = *tPtr;
 
-if (newVertexList == NULL) {
-ABORT("Out of memory");
-}
-
-// Scan the triangle list and fill it in
-
-for (int i = 0 ; i < triCount() ; ++i) {
-Tri *t = &tri(i);
-
-// Process the three vertices on this face
-
-for (int j = 0 ; j < 3 ; ++j) {
-
-// Get source and destination vertex indices
-
-int	sIndex = t->v[j].index;
-int	dIndex = i*3 + j;
-Vertex	*dPtr = &newVertexList[dIndex];
-
-// Copy the vertex
-
-*dPtr = vertex(sIndex);
-
-// Go ahead and fill in UV and normal now.  It can't hurt
-
-dPtr->u = t->v[j].u;
-dPtr->v = t->v[j].v;
-dPtr->normal = t->normal;
-
-// Set new vertex index
-
-t->v[j].index = dIndex;
-}
-}
-
-// Free the old vertex list
-
-::free(vList);
-
-// Install the new one
+    // Remap material index
 
-vList = newVertexList;
-vCount = newVertexCount;
-vAlloc = newVertexCount;
-}
-
-//---------------------------------------------------------------------------
-// transformVertices
-//
-// Transform all the vertices.  We could transform the surface normals,
-// but they may not even be valid, anyway.  If you need them, compute them.
-
-pub fn transformVertices(Matrix4x3 &m) {
-for (int i = 0 ; i < vertexCount() ; ++i) {
-vertex(i).p *= m;
-}
-}
+    Material *m = &material(t.material);
+    if (m->mark < 0) {
+    m->mark = dMesh->addMaterial(*m);
+    }
+    t.material = m->mark;
 
-//---------------------------------------------------------------------------
-// extractParts
-//
-// Extract each part into a seperate mesh.  Each resulting mesh will
-// have exactly one part
+    // Remap vertices
 
-pub fn extractParts(EditTriMesh *meshes) {
+    for (int j = 0 ; j < 3 ; ++j) {
+    Vertex *v = &vertex(t.v[j].index);
+    if (v->mark < 0) {
+    v->mark = dMesh->addVertex(*v);
+    }
+    t.v[j].index = v->mark;
+    }
 
-// !SPEED! This function will run in O(partCount * triCount).
-// We could optimize it somewhat by having the triangles sorted by
-// part.  However, any real optimization would be considerably
-// more complicated.  Let's just keep it simple.
+    // Add the face
 
-// Scan through each part
+    t.part = 0;
+    dMesh->addTri(t);
+    }
+    }
+        */
+    }
 
-for (int partIndex = 0 ; partIndex < partCount() ; ++partIndex) {
+    /*
+    pub fn extractOnePartOneMaterial(int partIndex, int materialIndex, EditTriMesh *result) {
 
-// Get shortcut to destination mesh
+    // Mark all vertices, assuming they will not be used
 
-EditTriMesh *dMesh = &meshes[partIndex];
+    markAllVertices(-1);
 
-// Mark all vertices and materials, assuming they will
-// not be used by this part
+    // Setup the destination mesh with a single part and material
 
-markAllVertices(-1);
-markAllMaterials(-1);
+    result->empty();
+    result->setPartCount(1);
+    result->part(0) = part(partIndex);
+    result->setMaterialCount(1);
+    result->material(0) = material(materialIndex);
 
-// Setup the destination part mesh with a single part
+    // Convert face list, simultaneously building vertex list
 
-dMesh->empty();
-dMesh->setPartCount(1);
-dMesh->part(0) = part(partIndex);
+    for (int faceIndex = 0 ; faceIndex < triCount() ; ++faceIndex) {
 
-// Convert face list, simultaneously building material and
-// vertex list
+    // Fetch shortcut, make sure it belongs to this
+    // part and uses this material
 
-for (int faceIndex = 0 ; faceIndex < triCount() ; ++faceIndex) {
+    Tri *tPtr = &tri(faceIndex);
+    if (tPtr->part != partIndex) {
+    continue;
+    }
+    if (tPtr->material != materialIndex) {
+    continue;
+    }
 
-// Fetch shortcut, make sure it belongs to this
-// part
+    // Make a copy
 
-Tri *tPtr = &tri(faceIndex);
-if (tPtr->part != partIndex) {
-continue;
-}
+    Tri t = *tPtr;
 
-// Make a copy
+    // Remap vertices
 
-Tri t = *tPtr;
+    for (int j = 0 ; j < 3 ; ++j) {
+    Vertex *v = &vertex(t.v[j].index);
+    if (v->mark < 0) {
+    v->mark = result->addVertex(*v);
+    }
+    t.v[j].index = v->mark;
+    }
 
-// Remap material index
+    // Add the face
 
-Material *m = &material(t.material);
-if (m->mark < 0) {
-m->mark = dMesh->addMaterial(*m);
-}
-t.material = m->mark;
+    t.part = 0;
+    t.material = 0;
+    result->addTri(t);
+    }
+    }
 
-// Remap vertices
+    /////////////////////////////////////////////////////////////////////////////
+    //
+    // EditTriMesh members - Computations
+    //
+    /////////////////////////////////////////////////////////////////////////////
 
-for (int j = 0 ; j < 3 ; ++j) {
-Vertex *v = &vertex(t.v[j].index);
-if (v->mark < 0) {
-v->mark = dMesh->addVertex(*v);
-}
-t.v[j].index = v->mark;
-}
+    //---------------------------------------------------------------------------
+    // computeOneTriNormal
+    //
+    // Compute a single triangle normal.
 
-// Add the face
+    pub fn computeOneTriNormal(int triIndex) {
+    computeOneTriNormal(tri(triIndex));
+    }
 
-t.part = 0;
-dMesh->addTri(t);
-}
-}
-}
+    pub fn computeOneTriNormal(Tri &t) {
 
-pub fn extractOnePartOneMaterial(int partIndex, int materialIndex, EditTriMesh *result) {
+    // Fetch shortcuts to vertices
 
-// Mark all vertices, assuming they will not be used
+    Vector3 &v1 = vertex(t.v[0].index).p;
+    Vector3 &v2 = vertex(t.v[1].index).p;
+    Vector3 &v3 = vertex(t.v[2].index).p;
 
-markAllVertices(-1);
+    // Compute clockwise edge vectors.  We use the edge vector
+    // indexing that agrees with Section 12.6.
 
-// Setup the destination mesh with a single part and material
+    Vector3 e1 = v3 - v2;
+    Vector3 e2 = v1 - v3;
 
-result->empty();
-result->setPartCount(1);
-result->part(0) = part(partIndex);
-result->setMaterialCount(1);
-result->material(0) = material(materialIndex);
+    // Cross product to compute surface normal
 
-// Convert face list, simultaneously building vertex list
+    t.normal = crossProduct(e1, e2);
 
-for (int faceIndex = 0 ; faceIndex < triCount() ; ++faceIndex) {
+    // Normalize it
 
-// Fetch shortcut, make sure it belongs to this
-// part and uses this material
+    t.normal.normalize();
+    }
 
-Tri *tPtr = &tri(faceIndex);
-if (tPtr->part != partIndex) {
-continue;
-}
-if (tPtr->material != materialIndex) {
-continue;
-}
+    //---------------------------------------------------------------------------
+    // computeTriNormals
+    //
+    // Compute all the triangle normals
 
-// Make a copy
+    pub fn computeTriNormals() {
+    for (int i = 0 ; i < triCount() ; ++i) {
+    computeOneTriNormal(tri(i));
+    }
+    }
 
-Tri t = *tPtr;
+    //---------------------------------------------------------------------------
+    // computeTriNormals
+    //
+    // Compute vertex level surface normals.  This automatically computes the
+    // triangle level surface normals
 
-// Remap vertices
+    pub fn computeVertexNormals() {
 
-for (int j = 0 ; j < 3 ; ++j) {
-Vertex *v = &vertex(t.v[j].index);
-if (v->mark < 0) {
-v->mark = result->addVertex(*v);
-}
-t.v[j].index = v->mark;
-}
+    int	i;
 
-// Add the face
+    // First, make sure triangle level surface normals are up-to-date
 
-t.part = 0;
-t.material = 0;
-result->addTri(t);
-}
-}
+    computeTriNormals();
 
-/////////////////////////////////////////////////////////////////////////////
-//
-// EditTriMesh members - Computations
-//
-/////////////////////////////////////////////////////////////////////////////
-
-//---------------------------------------------------------------------------
-// computeOneTriNormal
-//
-// Compute a single triangle normal.
-
-pub fn computeOneTriNormal(int triIndex) {
-computeOneTriNormal(tri(triIndex));
-}
+    // Zero out vertex normals
 
-pub fn computeOneTriNormal(Tri &t) {
+    for (i = 0 ; i < vertexCount() ; ++i) {
+    vertex(i).normal.zero();
+    }
 
-// Fetch shortcuts to vertices
+    // Sum in the triangle normals into the vertex normals
+    // that are used by the triangle
 
-Vector3 &v1 = vertex(t.v[0].index).p;
-Vector3 &v2 = vertex(t.v[1].index).p;
-Vector3 &v3 = vertex(t.v[2].index).p;
+    for (i = 0 ; i < triCount() ; ++i) {
+    Tri *t = &tri(i);
+    for (int j = 0 ; j < 3 ; ++j) {
+    vertex(t->v[j].index).normal += t->normal;
+    }
+    }
 
-// Compute clockwise edge vectors.  We use the edge vector
-// indexing that agrees with Section 12.6.
+    // Now "average" the vertex surface normals, by normalizing them
 
-Vector3 e1 = v3 - v2;
-Vector3 e2 = v1 - v3;
+    for (i = 0 ; i < vertexCount() ; ++i) {
+    vertex(i).normal.normalize();
+    }
+    }
 
-// Cross product to compute surface normal
+    //---------------------------------------------------------------------------
+    // computeBounds
+    //
+    // Compute the bounding box of the mesh
 
-t.normal = crossProduct(e1, e2);
+    AABB3	computeBounds() {
 
-// Normalize it
+    // Generate the bounding box of the vertices
 
-t.normal.normalize();
-}
+    AABB3	box;
+    box.empty();
+    for (int i = 0 ; i < vertexCount() ; ++i) {
+    box.add(vertex(i).p);
+    }
 
-//---------------------------------------------------------------------------
-// computeTriNormals
-//
-// Compute all the triangle normals
-
-pub fn computeTriNormals() {
-for (int i = 0 ; i < triCount() ; ++i) {
-computeOneTriNormal(tri(i));
-}
-}
+    // Return it
 
-//---------------------------------------------------------------------------
-// computeTriNormals
-//
-// Compute vertex level surface normals.  This automatically computes the
-// triangle level surface normals
+    return box;
+    }
 
-pub fn computeVertexNormals() {
+    /////////////////////////////////////////////////////////////////////////////
+    //
+    // EditTriMesh members - Optimization
+    //
+    /////////////////////////////////////////////////////////////////////////////
 
-int	i;
+    //---------------------------------------------------------------------------
+    // optimizeVertexOrder
+    //
+    // Re-order the vertex list, in the order that they are used by the faces.
+    // This can improve cache performace and vertex caching by increasing the
+    // locality of reference.
+    //
+    // If removeUnusedVertices is true, then any unused vertices are discarded.
+    // Otherwise, they are retained at the end of the vertex list.  Normally
+    // you will want to discard them, which is why we default the paramater to
+    // true.
 
-// First, make sure triangle level surface normals are up-to-date
+    pub fn optimizeVertexOrder(bool removeUnusedVertices) {
 
-computeTriNormals();
+    int	i;
 
-// Zero out vertex normals
+    // Mark all vertices with a very high mark, which assumes
+    // that they will not be used
 
-for (i = 0 ; i < vertexCount() ; ++i) {
-vertex(i).normal.zero();
-}
+    for (i = 0 ; i < vertexCount() ; ++i) {
+    vertex(i).mark = vertexCount();
+    }
 
-// Sum in the triangle normals into the vertex normals
-// that are used by the triangle
+    // Scan the face list, and figure out where the vertices
+    // will end up in the new, ordered list.  At the same time,
+    // we remap the indices in the triangles according to this
+    // new ordering.
 
-for (i = 0 ; i < triCount() ; ++i) {
-Tri *t = &tri(i);
-for (int j = 0 ; j < 3 ; ++j) {
-vertex(t->v[j].index).normal += t->normal;
-}
-}
+    int	usedVertexCount = 0;
+    for (i = 0 ; i < triCount() ; ++i) {
+    Tri *t = &tri(i);
 
-// Now "average" the vertex surface normals, by normalizing them
+    // Process each of the three vertices on this triangle
 
-for (i = 0 ; i < vertexCount() ; ++i) {
-vertex(i).normal.normalize();
-}
-}
+    for (int j = 0 ; j < 3 ; ++j) {
 
-//---------------------------------------------------------------------------
-// computeBounds
-//
-// Compute the bounding box of the mesh
+    // Get shortcut to the vertex used
 
-AABB3	computeBounds() {
+    Vertex *v = &vertex(t->v[j].index);
 
-// Generate the bounding box of the vertices
+    // Has it been used already?
 
-AABB3	box;
-box.empty();
-for (int i = 0 ; i < vertexCount() ; ++i) {
-box.add(vertex(i).p);
-}
+    if (v->mark == vertexCount()) {
 
-// Return it
+    // We're the first triangle to use
+    // this one.  Assign the vertex to
+    // the next slot in the new vertex
+    // list
 
-return box;
-}
+    v->mark = usedVertexCount;
+    ++usedVertexCount;
+    }
 
-/////////////////////////////////////////////////////////////////////////////
-//
-// EditTriMesh members - Optimization
-//
-/////////////////////////////////////////////////////////////////////////////
-
-//---------------------------------------------------------------------------
-// optimizeVertexOrder
-//
-// Re-order the vertex list, in the order that they are used by the faces.
-// This can improve cache performace and vertex caching by increasing the
-// locality of reference.
-//
-// If removeUnusedVertices is true, then any unused vertices are discarded.
-// Otherwise, they are retained at the end of the vertex list.  Normally
-// you will want to discard them, which is why we default the paramater to
-// true.
-
-pub fn optimizeVertexOrder(bool removeUnusedVertices) {
-
-int	i;
-
-// Mark all vertices with a very high mark, which assumes
-// that they will not be used
-
-for (i = 0 ; i < vertexCount() ; ++i) {
-vertex(i).mark = vertexCount();
-}
+    // Remap the vertex index
 
-// Scan the face list, and figure out where the vertices
-// will end up in the new, ordered list.  At the same time,
-// we remap the indices in the triangles according to this
-// new ordering.
+    t->v[j].index = v->mark;
+    }
+    }
 
-int	usedVertexCount = 0;
-for (i = 0 ; i < triCount() ; ++i) {
-Tri *t = &tri(i);
+    // Re-sort the vertex list.  This puts the used vertices
+    // in order where they go, and moves all the unused vertices
+    // to the end (in no particular order, since qsort is not
+    // a stable sort)
 
-// Process each of the three vertices on this triangle
+    qsort(vList, vertexCount(), sizeof(Vertex), vertexCompareByMark);
 
-for (int j = 0 ; j < 3 ; ++j) {
+    // Did they want to discard the unused guys?
 
-// Get shortcut to the vertex used
+    if (removeUnusedVertices) {
 
-Vertex *v = &vertex(t->v[j].index);
+    // Yep - chop off the unused vertices by slamming
+    // the vertex count.  We don't call the function to
+    // set the vertex count here, since it will scan
+    // the triangle list for any triangle that use those
+    // vertices.  But we already know that all of the
+    // vertices we are deleting are unused
 
-// Has it been used already?
+    vCount = usedVertexCount;
+    }
+    }
 
-if (v->mark == vertexCount()) {
+    //---------------------------------------------------------------------------
+    // sortTrisByMaterial
+    //
+    // Sort triangles by material.  This is VERY important for effecient
+    // rendering
 
-// We're the first triangle to use
-// this one.  Assign the vertex to
-// the next slot in the new vertex
-// list
+    pub fn sortTrisByMaterial() {
 
-v->mark = usedVertexCount;
-++usedVertexCount;
-}
+    // Put the current index into the "mark" field so we can
+    // have a stable sort
 
-// Remap the vertex index
+    for (int i = 0 ; i < triCount() ; ++i) {
+    tri(i).mark = i;
+    }
 
-t->v[j].index = v->mark;
-}
-}
+    // Use qsort
 
-// Re-sort the vertex list.  This puts the used vertices
-// in order where they go, and moves all the unused vertices
-// to the end (in no particular order, since qsort is not
-// a stable sort)
+    qsort(tList, triCount(), sizeof(Tri), triCompareByMaterial);
+    }
 
-qsort(vList, vertexCount(), sizeof(Vertex), vertexCompareByMark);
+    //---------------------------------------------------------------------------
+    // weldVertices
+    //
+    // Weld coincident vertices.  For the moment, this disregards UVs and welds
+    // all vertices that are within geometric tolerance
 
-// Did they want to discard the unused guys?
+    pub fn weldVertices(OptimizationParameters &opt) {
 
-if (removeUnusedVertices) {
+    // !FIXME!
 
-// Yep - chop off the unused vertices by slamming
-// the vertex count.  We don't call the function to
-// set the vertex count here, since it will scan
-// the triangle list for any triangle that use those
-// vertices.  But we already know that all of the
-// vertices we are deleting are unused
+    }
 
-vCount = usedVertexCount;
-}
-}
+    //---------------------------------------------------------------------------
+    // copyUvsIntoVertices
+    //
+    // Ensure that the vertex UVs are correct, possibly duplicating
+    // vertices if necessary
 
-//---------------------------------------------------------------------------
-// sortTrisByMaterial
-//
-// Sort triangles by material.  This is VERY important for effecient
-// rendering
+    pub fn copyUvsIntoVertices() {
 
-pub fn sortTrisByMaterial() {
+    // Mark all vertices indicating thet their UV's are invalid
 
-// Put the current index into the "mark" field so we can
-// have a stable sort
+    markAllVertices(0);
 
-for (int i = 0 ; i < triCount() ; ++i) {
-tri(i).mark = i;
-}
+    // Scan the faces, and shove in the UV's into the vertices
 
-// Use qsort
+    for (int triIndex = 0 ; triIndex < triCount() ; ++triIndex) {
+    Tri *triPtr = &tri(triIndex);
+    for (int i = 0 ; i < 3 ; ++i) {
 
-qsort(tList, triCount(), sizeof(Tri), triCompareByMaterial);
-}
+    // Locate vertex
 
-//---------------------------------------------------------------------------
-// weldVertices
-//
-// Weld coincident vertices.  For the moment, this disregards UVs and welds
-// all vertices that are within geometric tolerance
+    int	vIndex = triPtr->v[i].index;
+    Vertex *vPtr = &vertex(vIndex);
 
-pub fn weldVertices(OptimizationParameters &opt) {
+    // Have we filled in the UVs for this vertex yet?
 
-// !FIXME!
+    if (vPtr->mark == 0) {
 
-}
+    // Nope.  Shove them in
 
-//---------------------------------------------------------------------------
-// copyUvsIntoVertices
-//
-// Ensure that the vertex UVs are correct, possibly duplicating
-// vertices if necessary
+    vPtr->u = triPtr->v[i].u;
+    vPtr->v = triPtr->v[i].v;
 
-pub fn copyUvsIntoVertices() {
+    // Mark UV's as valid, and keep going
 
-// Mark all vertices indicating thet their UV's are invalid
+    vPtr->mark = 1;
+    continue;
+    }
 
-markAllVertices(0);
+    // UV's have already been filled in by another face.
+    // Did that face have the same UV's as me?
 
-// Scan the faces, and shove in the UV's into the vertices
+    if (
+    (vPtr->u == triPtr->v[i].u) &&
+    (vPtr->v == triPtr->v[i].v)
+    ) {
 
-for (int triIndex = 0 ; triIndex < triCount() ; ++triIndex) {
-Tri *triPtr = &tri(triIndex);
-for (int i = 0 ; i < 3 ; ++i) {
+    // Yep - no need to change anything
 
-// Locate vertex
+    continue;
+    }
 
-int	vIndex = triPtr->v[i].index;
-Vertex *vPtr = &vertex(vIndex);
+    // OK, we can't use this vertex - somebody else already has
+    // it "claimed" with different UV's.  First, we'll search
+    // for another vertex with the same position.  Yikes -
+    // this requires a linear search through the vertex list.
+    // Luckily, this should not happen the majority of the time.
 
-// Have we filled in the UVs for this vertex yet?
+    bool	foundOne = false;
+    for (int newIndex = 0 ; newIndex < vertexCount() ; ++newIndex) {
+    Vertex *newPtr = &vertex(newIndex);
 
-if (vPtr->mark == 0) {
+    // Is the position and normal correct?
 
-// Nope.  Shove them in
+    if (
+    (newPtr->p != vPtr->p) ||
+    (newPtr->normal != vPtr->normal)
+    ) {
+    continue;
+    }
 
-vPtr->u = triPtr->v[i].u;
-vPtr->v = triPtr->v[i].v;
+    // OK, this vertex is geometrically correct.
+    // Has anybody filled in the UV's yet?
 
-// Mark UV's as valid, and keep going
+    if (newPtr->mark == 0) {
 
-vPtr->mark = 1;
-continue;
-}
+    // We can claim this one.
 
-// UV's have already been filled in by another face.
-// Did that face have the same UV's as me?
+    newPtr->mark = 1;
+    newPtr->u = triPtr->v[i].u;
+    newPtr->v = triPtr->v[i].v;
 
-if (
-(vPtr->u == triPtr->v[i].u) &&
-(vPtr->v == triPtr->v[i].v)
-) {
+    // Remap vertex index
 
-// Yep - no need to change anything
+    triPtr->v[i].index = newIndex;
 
-continue;
-}
+    // No need to keep looking
 
-// OK, we can't use this vertex - somebody else already has
-// it "claimed" with different UV's.  First, we'll search
-// for another vertex with the same position.  Yikes - 
-// this requires a linear search through the vertex list.
-// Luckily, this should not happen the majority of the time.
-
-bool	foundOne = false;
-for (int newIndex = 0 ; newIndex < vertexCount() ; ++newIndex) {
-Vertex *newPtr = &vertex(newIndex);
-
-// Is the position and normal correct?
-
-if (
-(newPtr->p != vPtr->p) ||
-(newPtr->normal != vPtr->normal)
-) {
-continue;
-}
+    foundOne = true;
+    break;
+    }
 
-// OK, this vertex is geometrically correct.
-// Has anybody filled in the UV's yet?
+    // Already claimed by somebody else, so we can't change
+    // them.  but are they correct, already anyway?
 
-if (newPtr->mark == 0) {
+    if (
+    (newPtr->u == triPtr->v[i].u) &&
+    (newPtr->v == triPtr->v[i].v)
+    ) {
 
-// We can claim this one.
+    // Yep - no need to change anything.  Just remap the
+    // vertex index
 
-newPtr->mark = 1;
-newPtr->u = triPtr->v[i].u;
-newPtr->v = triPtr->v[i].v;
+    triPtr->v[i].index = newIndex;
 
-// Remap vertex index
+    // No need to keep looking
 
-triPtr->v[i].index = newIndex;
+    foundOne = true;
+    break;
+    }
 
-// No need to keep looking
+    // No good - keep looking
+    }
 
-foundOne = true;
-break;
-}
+    // Did we find a vertex?
 
-// Already claimed by somebody else, so we can't change
-// them.  but are they correct, already anyway?
+    if (!foundOne) {
 
-if (
-(newPtr->u == triPtr->v[i].u) &&
-(newPtr->v == triPtr->v[i].v)
-) {
+    // Nope, we'll have to create a new one
 
-// Yep - no need to change anything.  Just remap the
-// vertex index 
+    Vertex newVertex = *vPtr;
+    newVertex.mark = 1;
+    newVertex.u = triPtr->v[i].u;
+    newVertex.v = triPtr->v[i].v;
+    triPtr->v[i].index = addVertex(newVertex);
+    }
+    }
+    }
+    }
 
-triPtr->v[i].index = newIndex;
+    // Do all of the optimizations and prepare the model
+    // for fast rendering under *most* rendering systems,
+    // with proper lighting.
 
-// No need to keep looking
+    pub fn optimizeForRendering() {
+    computeVertexNormals();
+    }
 
-foundOne = true;
-break;
-}
+    /////////////////////////////////////////////////////////////////////////////
+    //
+    // EditTriMesh members - Import/Export S3D format
+    //
+    // For more on the S3D file format, and free tools for using the
+    // S3D format with popular rendering packages, visit
+    // gamemath.com
+    //
+    /////////////////////////////////////////////////////////////////////////////
 
-// No good - keep looking
-}
+    //---------------------------------------------------------------------------
+    // importS3d
+    //
+    // Load up an S3D file.  Returns true on success.  If failure, returns
+    // false and puts an error message into returnErrMsg
 
-// Did we find a vertex?
+    bool	importS3d(char *filename, char *returnErrMsg) {
+    int	i;
 
-if (!foundOne) {
+    // Try to open up the file
 
-// Nope, we'll have to create a new one
+    FILE *f = fopen(filename, "rt");
+    if (f == NULL) {
+    strcpy(returnErrMsg, "Can't open file");
+    failed:
+    empty();
+    if (f != NULL) {
+    fclose(f);
+    }
+    return false;
+    }
 
-Vertex newVertex = *vPtr;
-newVertex.mark = 1;
-newVertex.u = triPtr->v[i].u;
-newVertex.v = triPtr->v[i].v;
-triPtr->v[i].index = addVertex(newVertex);
-}
-}
-}
-}
+    // Read and check version
 
-// Do all of the optimizations and prepare the model
-// for fast rendering under *most* rendering systems,
-// with proper lighting.
+    if (!skipLine(f)) {
+    corrupt:
+    strcpy(returnErrMsg, "File is corrupt");
+    goto failed;
+    }
+    int	version;
+    if (fscanf(f, "%d\n", &version) != 1) {
+    goto corrupt;
+    }
+    if (version != 103) {
+    sprintf(returnErrMsg, "File is version %d - only version 103 supported", version);
+    goto failed;
+    }
 
-pub fn optimizeForRendering() {
-computeVertexNormals();
-}
+    // Read header
 
-/////////////////////////////////////////////////////////////////////////////
-//
-// EditTriMesh members - Import/Export S3D format
-//
-// For more on the S3D file format, and free tools for using the
-// S3D format with popular rendering packages, visit
-// gamemath.com
-//
-/////////////////////////////////////////////////////////////////////////////
-
-//---------------------------------------------------------------------------
-// importS3d
-//
-// Load up an S3D file.  Returns true on success.  If failure, returns
-// false and puts an error message into returnErrMsg
-
-bool	importS3d(char *filename, char *returnErrMsg) {
-int	i;
-
-// Try to open up the file
-
-FILE *f = fopen(filename, "rt");
-if (f == NULL) {
-strcpy(returnErrMsg, "Can't open file");
-failed:
-empty();
-if (f != NULL) {
-fclose(f);
-}
-return false;
-}
+    if (!skipLine(f)) {
+    goto corrupt;
+    }
+    int	numTextures, numTris, numVerts, numParts, numFrames, numLights, numCameras;
+    if (fscanf(f, "%d , %d , %d , %d , %d , %d , %d\n", &numTextures, &numTris, &numVerts, &numParts, &numFrames, &numLights, &numCameras) != 7) {
+    goto corrupt;
+    }
 
-// Read and check version
+    // Allocate lists
 
-if (!skipLine(f)) {
-corrupt:
-strcpy(returnErrMsg, "File is corrupt");
-goto failed;
-}
-int	version;
-if (fscanf(f, "%d\n", &version) != 1) {
-goto corrupt;
-}
-if (version != 103) {
-sprintf(returnErrMsg, "File is version %d - only version 103 supported", version);
-goto failed;
-}
+    setMaterialCount(numTextures);
+    setTriCount(numTris);
+    setVertexCount(numVerts);
+    setPartCount(numParts);
 
-// Read header
+    // Read part list.  the only number we care about
+    // is the triangle count, which we'll temporarily
+    // stach into the mark field
 
-if (!skipLine(f)) {
-goto corrupt;
-}
-int	numTextures, numTris, numVerts, numParts, numFrames, numLights, numCameras;
-if (fscanf(f, "%d , %d , %d , %d , %d , %d , %d\n", &numTextures, &numTris, &numVerts, &numParts, &numFrames, &numLights, &numCameras) != 7) {
-goto corrupt;
-}
+    if (!skipLine(f)) {
+    goto corrupt;
+    }
+    int	firstVert = 0, firstTri = 0;
+    for (i = 0 ; i < numParts ; ++i) {
+    Part *p = &part(i);
+    int	partFirstVert, partNumVerts, partFirstTri, partNumTris;
+    if (fscanf(f, "%d , %d , %d , %d , \"%[^\"]\"\n", &partFirstVert, &partNumVerts, &partFirstTri, &partNumTris, p->name) != 5) {
+    sprintf(returnErrMsg, "Corrupt at part %d", i);
+    goto failed;
+    }
+    if (firstVert != partFirstVert || firstTri != partFirstTri) {
+    sprintf(returnErrMsg, "Part vertex/tri mismatch detected at part %d", i);
+    goto failed;
+    }
+    p->mark = partNumTris;
+    firstVert += partNumVerts;
+    firstTri += partNumTris;
+    }
+    if (firstVert != numVerts || firstTri != numTris) {
+    strcpy(returnErrMsg, "Part vertex/tri mismatch detected at end of part list");
+    goto failed;
+    }
 
-// Allocate lists
+    // Read textures.
 
-setMaterialCount(numTextures);
-setTriCount(numTris);
-setVertexCount(numVerts);
-setPartCount(numParts);
+    if (!skipLine(f)) {
+    goto corrupt;
+    }
+    for (i = 0 ; i < numTextures ; ++i) {
+    Material	*m = &material(i);
 
-// Read part list.  the only number we care about
-// is the triangle count, which we'll temporarily
-// stach into the mark field
+    // Fetch line of text
 
-if (!skipLine(f)) {
-goto corrupt;
-}
-int	firstVert = 0, firstTri = 0;
-for (i = 0 ; i < numParts ; ++i) {
-Part *p = &part(i);
-int	partFirstVert, partNumVerts, partFirstTri, partNumTris;
-if (fscanf(f, "%d , %d , %d , %d , \"%[^\"]\"\n", &partFirstVert, &partNumVerts, &partFirstTri, &partNumTris, p->name) != 5) {
-sprintf(returnErrMsg, "Corrupt at part %d", i);
-goto failed;
-}
-if (firstVert != partFirstVert || firstTri != partFirstTri) {
-sprintf(returnErrMsg, "Part vertex/tri mismatch detected at part %d", i);
-goto failed;
-}
-p->mark = partNumTris;
-firstVert += partNumVerts;
-firstTri += partNumTris;
-}
-if (firstVert != numVerts || firstTri != numTris) {
-strcpy(returnErrMsg, "Part vertex/tri mismatch detected at end of part list");
-goto failed;
-}
+    if (fgets(m->diffuseTextureName, sizeof(m->diffuseTextureName), f) != m->diffuseTextureName) {
+    sprintf(returnErrMsg, "Corrupt reading texture %d", i);
+    goto failed;
+    }
 
-// Read textures.
+    // Styrip off newline, which fgets leaves.
+    // Wouldn't it have been nice if the stdio
+    // functions would just have a function to read a line
+    // WITHOUT the newline character.  What a pain...
 
-if (!skipLine(f)) {
-goto corrupt;
-}
-for (i = 0 ; i < numTextures ; ++i) {
-Material	*m = &material(i);
+    char *nl = strchr(m->diffuseTextureName, '\n');
+    if (nl != NULL) {
+    *nl = '\0';
+    }
+    }
 
-// Fetch line of text
+    // Read triangles a part at a time
 
-if (fgets(m->diffuseTextureName, sizeof(m->diffuseTextureName), f) != m->diffuseTextureName) {
-sprintf(returnErrMsg, "Corrupt reading texture %d", i);
-goto failed;
-}
+    if (!skipLine(f)) {
+    goto corrupt;
+    }
+    int	whiteTextureIndex = -1;
+    int	destTriIndex = 0;
+    for (int partIndex = 0 ; partIndex < numParts ; ++partIndex) {
 
-// Styrip off newline, which fgets leaves.
-// Wouldn't it have been nice if the stdio
-// functions would just have a function to read a line
-// WITHOUT the newline character.  What a pain...
-
-char *nl = strchr(m->diffuseTextureName, '\n');
-if (nl != NULL) {
-*nl = '\0';
-}
-}
+    // Read all triangles in this part
 
-// Read triangles a part at a time
+    for (int i = 0 ; i < part(partIndex).mark ; ++i) {
 
-if (!skipLine(f)) {
-goto corrupt;
-}
-int	whiteTextureIndex = -1;
-int	destTriIndex = 0;
-for (int partIndex = 0 ; partIndex < numParts ; ++partIndex) {
+    // get shortcut to destination triangle
 
-// Read all triangles in this part
+    Tri *t = &tri(destTriIndex);
 
-for (int i = 0 ; i < part(partIndex).mark ; ++i) {
+    // Slam part number
 
-// get shortcut to destination triangle
+    t->part = partIndex;
 
-Tri *t = &tri(destTriIndex);
+    // Parse values from file
 
-// Slam part number
+    if (fscanf(f, "%d , %d , %f , %f , %d , %f , %f , %d , %f , %f\n",
+    &t->material,
+    &t->v[0].index, &t->v[0].u, &t->v[0].v,
+    &t->v[1].index, &t->v[1].u, &t->v[1].v,
+    &t->v[2].index, &t->v[2].u, &t->v[2].v
+    ) != 10) {
+    sprintf(returnErrMsg, "Corrupt reading triangle %d (%d of part %d)", destTriIndex, i, partIndex);
+    goto failed;
+    }
 
-t->part = partIndex;
+    // Check for untextured triangle
 
-// Parse values from file
+    if (t->material < 0) {
+    if (whiteTextureIndex < 0) {
+    Material whiteMaterial;
+    strcpy(whiteMaterial.diffuseTextureName, "White");
+    whiteTextureIndex = addMaterial(whiteMaterial);
+    }
+    t->material = whiteTextureIndex;
+    }
 
-if (fscanf(f, "%d , %d , %f , %f , %d , %f , %f , %d , %f , %f\n",
-&t->material,
-&t->v[0].index, &t->v[0].u, &t->v[0].v,
-&t->v[1].index, &t->v[1].u, &t->v[1].v,
-&t->v[2].index, &t->v[2].u, &t->v[2].v
-) != 10) {
-sprintf(returnErrMsg, "Corrupt reading triangle %d (%d of part %d)", destTriIndex, i, partIndex);
-goto failed;
-}
+    // Scale UV's to 0...1 range
 
-// Check for untextured triangle
+    t->v[0].u /= 256.0f;
+    t->v[0].v /= 256.0f;
+    t->v[1].u /= 256.0f;
+    t->v[1].v /= 256.0f;
+    t->v[2].u /= 256.0f;
+    t->v[2].v /= 256.0f;
 
-if (t->material < 0) {
-if (whiteTextureIndex < 0) {
-Material whiteMaterial;
-strcpy(whiteMaterial.diffuseTextureName, "White");
-whiteTextureIndex = addMaterial(whiteMaterial);
-}
-t->material = whiteTextureIndex;
-}
+    // Next triangle, please
 
-// Scale UV's to 0...1 range
+    ++destTriIndex;
+    }
+    }
+    assert(destTriIndex == triCount());
 
-t->v[0].u /= 256.0f;
-t->v[0].v /= 256.0f;
-t->v[1].u /= 256.0f;
-t->v[1].v /= 256.0f;
-t->v[2].u /= 256.0f;
-t->v[2].v /= 256.0f;
+    // Read vertices
 
-// Next triangle, please
+    if (!skipLine(f)) {
+    goto corrupt;
+    }
+    for (i = 0 ; i < numVerts ; ++i) {
+    Vertex *v = &vertex(i);
+    if (fscanf(f, "%f , %f , %f\n", &v->p.x, &v->p.y, &v->p.z) != 3) {
+    sprintf(returnErrMsg, "Corrupt reading vertex %d", i);
+    goto failed;
+    }
+    }
 
-++destTriIndex;
-}
-}
-assert(destTriIndex == triCount());
+    // OK, we don't need anything from the rest of the file.  Close file.
 
-// Read vertices
+    fclose(f);
+    f = NULL;
 
-if (!skipLine(f)) {
-goto corrupt;
-}
-for (i = 0 ; i < numVerts ; ++i) {
-Vertex *v = &vertex(i);
-if (fscanf(f, "%f , %f , %f\n", &v->p.x, &v->p.y, &v->p.z) != 3) {
-sprintf(returnErrMsg, "Corrupt reading vertex %d", i);
-goto failed;
-}
-}
+    // Check for structural errors in the mesh
 
-// OK, we don't need anything from the rest of the file.  Close file.
+    if (!validityCheck(returnErrMsg)) {
+    goto failed;
+    }
 
-fclose(f);
-f = NULL;
+    // OK!
 
-// Check for structural errors in the mesh
+    return true;
+    }
 
-if (!validityCheck(returnErrMsg)) {
-goto failed;
-}
+    pub fn exportS3d(char *filename) {
+    }
 
-// OK!
+    /////////////////////////////////////////////////////////////////////////////
+    //
+    // EditTriMesh members - Debugging
+    //
+    /////////////////////////////////////////////////////////////////////////////
 
-return true;
-}
+    pub fn validityCheck() {
+    char	errMsg[256];
+    if (!validityCheck(errMsg)) {
+    ABORT("EditTriMesh failed validity check:\n%s", errMsg);
+    }
+    }
 
-pub fn exportS3d(char *filename) {
-}
+    bool	validityCheck(char *returnErrMsg) {
+    return true;
+    }
 
-/////////////////////////////////////////////////////////////////////////////
-//
-// EditTriMesh members - Debugging
-//
-/////////////////////////////////////////////////////////////////////////////
-
-pub fn validityCheck() {
-char	errMsg[256];
-if (!validityCheck(errMsg)) {
-ABORT("EditTriMesh failed validity check:\n%s", errMsg);
-}
-}
+    }
 
-bool	validityCheck(char *returnErrMsg) {
-return true;
-}
+    //---------------------------------------------------------------------------
+    // operator=
+    //
+    // Assignment operator - make a copy of the mesh
 
-}
+    EditTriMesh &operator=(EditTriMesh &src) {
+    int	i;
 
-//---------------------------------------------------------------------------
-// operator=
-//
-// Assignment operator - make a copy of the mesh
+    // Start by freeing up what we already have
 
-EditTriMesh &operator=(EditTriMesh &src) {
-int	i;
+    empty();
 
-// Start by freeing up what we already have
+    // Copy materials and parts first.  We copy these stupidly,
+    // since the lists probably won't be very big
 
-empty();
+    setMaterialCount(src.materialCount());
+    for (i = 0 ; i < materialCount() ; ++i) {
+    material(i) = src.material(i);
+    }
 
-// Copy materials and parts first.  We copy these stupidly,
-// since the lists probably won't be very big
+    setPartCount(src.partCount());
+    for (i = 0 ; i < partCount() ; ++i) {
+    part(i) = src.part(i);
+    }
 
-setMaterialCount(src.materialCount());
-for (i = 0 ; i < materialCount() ; ++i) {
-material(i) = src.material(i);
-}
+    // Make sure vertex list isn't empty
 
-setPartCount(src.partCount());
-for (i = 0 ; i < partCount() ; ++i) {
-part(i) = src.part(i);
-}
+    if (src.vertexCount() > 0) {
 
-// Make sure vertex list isn't empty
+    // Compute size in bytes
 
-if (src.vertexCount() > 0) {
+    int	bytes = src.vertexCount() * sizeof(*vList);
 
-// Compute size in bytes
+    // Allocate it.  We don't use setVertexCount(), since
+    // that initializes the list, which we don't need
 
-int	bytes = src.vertexCount() * sizeof(*vList);
+    vList = (Vertex *)::malloc(bytes);
+    if (vList == NULL) {
+    ABORT("Out of memory");
+    }
+    vCount = src.vertexCount();
+    vAlloc = vCount;
 
-// Allocate it.  We don't use setVertexCount(), since
-// that initializes the list, which we don't need
+    // Blast copy it
 
-vList = (Vertex *)::malloc(bytes);
-if (vList == NULL) {
-ABORT("Out of memory");
-}
-vCount = src.vertexCount();
-vAlloc = vCount;
+    memcpy(vList, src.vList, bytes);
+    }
 
-// Blast copy it
+    // Make sure face list isn't empty
 
-memcpy(vList, src.vList, bytes);
-}
+    if (src.triCount() > 0) {
 
-// Make sure face list isn't empty
+    // Compute size in bytes
 
-if (src.triCount() > 0) {
+    int	bytes = src.triCount() * sizeof(*tList);
 
-// Compute size in bytes
+    // Allocate it.  We don't use setVertexCount(), since
+    // that initializes the list, which we don't need
 
-int	bytes = src.triCount() * sizeof(*tList);
+    tList = (Tri *)::malloc(bytes);
+    if (tList == NULL) {
+    ABORT("Out of memory");
+    }
+    tCount = src.triCount();
+    tAlloc = tCount;
 
-// Allocate it.  We don't use setVertexCount(), since
-// that initializes the list, which we don't need
+    // Blast copy it
 
-tList = (Tri *)::malloc(bytes);
-if (tList == NULL) {
-ABORT("Out of memory");
-}
-tCount = src.triCount();
-tAlloc = tCount;
+    memcpy(tList, src.tList, bytes);
+    }
 
-// Blast copy it
+    // Return reference to l-value, as per C convention
 
-memcpy(tList, src.tList, bytes);
-}
+    return *this;
+    }
 
-// Return reference to l-value, as per C convention
 
-return *this;
-}
 
+    /////////////////////////////////////////////////////////////////////////////
+    //
+    // Local utility stuff
+    //
+    /////////////////////////////////////////////////////////////////////////////
 
+    //---------------------------------------------------------------------------
+    // vertexCompareByMark
+    //
+    // Compare two vertices by their mark field.  Used to sort using qsort.
 
-/////////////////////////////////////////////////////////////////////////////
-//
-// Local utility stuff
-//
-/////////////////////////////////////////////////////////////////////////////
+    static int vertexCompareByMark(void *va, void *vb) {
 
-//---------------------------------------------------------------------------
-// vertexCompareByMark
-//
-// Compare two vertices by their mark field.  Used to sort using qsort.
+    // Cast pointers
 
-static int vertexCompareByMark(void *va, void *vb) {
+    Vertex *a = (Vertex *)va;
+    Vertex *b = (Vertex *)vb;
 
-// Cast pointers
+    // Return comparison result as per Qsort conventions:
+    //
+    // <0	a goes "before" b
+    // >0	a goes "after" b
+    // 0	doesn't matter
+    //
+    // We want the lower mark to come first
 
-Vertex *a = (Vertex *)va;
-Vertex *b = (Vertex *)vb;
+    return a->mark - b->mark;
+    }
 
-// Return comparison result as per Qsort conventions:
-//
-// <0	a goes "before" b
-// >0	a goes "after" b
-// 0	doesn't matter
-//
-// We want the lower mark to come first
+    //---------------------------------------------------------------------------
+    // triCompareByMaterial
+    //
+    // Compare two triangles by their material field.  Used to sort using qsort.
 
-return a->mark - b->mark;
-}
+    static int triCompareByMaterial(void *va, void *vb) {
 
-//---------------------------------------------------------------------------
-// triCompareByMaterial
-//
-// Compare two triangles by their material field.  Used to sort using qsort.
+    // Cast pointers
 
-static int triCompareByMaterial(void *va, void *vb) {
+    Tri *a = (Tri *)va;
+    Tri *b = (Tri *)vb;
 
-// Cast pointers
+    // Return comparison result as per Qsort conventions:
+    //
+    // <0	a goes "before" b
+    // >0	a goes "after" b
+    // 0	doesn't matter
+    //
+    // We want the lower material to come first
 
-Tri *a = (Tri *)va;
-Tri *b = (Tri *)vb;
+    if (a->material < b->material) return -1;
+    if (a->material > b->material) return +1;
 
-// Return comparison result as per Qsort conventions:
-//
-// <0	a goes "before" b
-// >0	a goes "after" b
-// 0	doesn't matter
-//
-// We want the lower material to come first
+    // Same material - use "mark" field, which contained the
+    // original index, so we'll have a stable sort
 
-if (a->material < b->material) return -1;
-if (a->material > b->material) return +1;
+    return a->mark - b->mark;
+    }
 
-// Same material - use "mark" field, which contained the
-// original index, so we'll have a stable sort
+    //---------------------------------------------------------------------------
+    // skipLine
+    //
+    // Skip a line of text from a file.  Returns false on failure (EOF or error).
 
-return a->mark - b->mark;
-}
+    static bool	skipLine(FILE *f) {
+    for (;;) {
+    int c = fgetc(f);
+    if (c < 0) {
+    return false;
+    }
+    if (c == '\n') {
+    return true;
+    }
+    }
 
-//---------------------------------------------------------------------------
-// skipLine
-//
-// Skip a line of text from a file.  Returns false on failure (EOF or error).
-
-static bool	skipLine(FILE *f) {
-for (;;) {
-int c = fgetc(f);
-if (c < 0) {
-return false;
-}
-if (c == '\n') {
-return true;
+     */
 }
-}
-}
-

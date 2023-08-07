@@ -5,4 +5,3 @@ use crate::renderer::Renderer;
 pub struct Config {
     pub(crate) renderer: Renderer,
 }
-
