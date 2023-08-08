@@ -11,3 +11,4 @@ channel = "nightly"
 [dependencies]
 debug_print = "1.0.0"
 once_cell = "1.18.0"
+scanf = "1.2.1"

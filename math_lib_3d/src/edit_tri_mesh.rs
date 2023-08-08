@@ -1,8 +1,10 @@
 #![allow(dead_code)]
 
+use crate::aabb3::AABB3;
 use crate::matrix4x3::Matrix4x3;
-use crate::vector3::Vector3;
+use crate::vector3::{cross_product, Vector3};
 use debug_print::debug_println;
+use std::cmp::Ordering;
 
 #[derive(Clone, Debug)]
 pub struct EditTriMesh {
@@ -573,24 +575,24 @@ impl EditTriMesh {
     //
     // Add a new, default triangle.  The index of the new item is returned
 
-    pub fn addDefaultTri(&mut self) -> i32 {
+    pub fn addDefaultTri(&mut self) -> usize {
         self.tList.push(Tri::default());
-        (self.tList.len() - 1) as i32
+        self.tList.len() - 1
     }
 
-    pub fn addTri(&mut self, tri: Tri) -> i32 {
+    pub fn addTri(&mut self, tri: Tri) -> usize {
         self.tList.push(tri);
-        (self.tList.len() - 1) as i32
+        self.tList.len() - 1
     }
 
-    pub fn addDefaultVertex(&mut self) -> i32 {
+    pub fn addDefaultVertex(&mut self) -> usize {
         self.vList.push(Vertex::default());
-        (self.vList.len() - 1) as i32
+        self.vList.len() - 1
     }
 
-    pub fn addVertex(&mut self, vertex: Vertex) -> i32 {
+    pub fn addVertex(&mut self, vertex: Vertex) -> usize {
         self.vList.push(vertex);
-        (self.vList.len() - 1) as i32
+        self.vList.len() - 1
     }
 
     //---------------------------------------------------------------------------
@@ -607,6 +609,7 @@ impl EditTriMesh {
     // addMaterial
     //
     // Add a material to the end of the list.
+    // comment: original C++ just copies references around
     pub fn addMaterial(&mut self, m: Material) -> i32 {
         self.mList.push(m);
         (self.mList.len() - 1) as i32
@@ -994,7 +997,7 @@ impl EditTriMesh {
         // Allocate a new vertex list
         let mut newVertexList: Vec<Vertex> = Vec::with_capacity(newVertexCount);
 
-        for i in 0..newVertexCount {
+        for _i in 0..newVertexCount {
             newVertexList.push(Vertex::default());
         }
 
@@ -1037,140 +1040,114 @@ impl EditTriMesh {
     //---------------------------------------------------------------------------
     // extractParts
     //
-    // Extract each part into a seperate mesh.  Each resulting mesh will
+    // Extract each part into a separate mesh.  Each resulting mesh will
     // have exactly one part
-
+    // Split current self mesh into multiple part meshes
     pub fn extractParts(&mut self, meshes: &mut Vec<EditTriMesh>) {
+        // !SPEED! This function will run in O(partCount * triCount).
+        // We could optimize it somewhat by having the triangles sorted by
+        // part.  However, any real optimization would be considerably
+        // more complicated.  Let's just keep it simple.
 
-    // !SPEED! This function will run in O(partCount * triCount).
-    // We could optimize it somewhat by having the triangles sorted by
-    // part.  However, any real optimization would be considerably
-    // more complicated.  Let's just keep it simple.
+        assert_eq!(
+            self.pList.len(),
+            meshes.len(),
+            "meshes vec must be the same length as the number of parts in this EditTriMesh"
+        );
 
-    // Scan through each part
-/*
-        for dMesh in meshes.iter_mut() {
+        // Scan through each part
+
+        for (partIndex, dMesh) in meshes.iter_mut().enumerate() {
+            // Mark all vertices and materials, assuming they will
+            // not be used by this part
             self.markAllVertices(-1);
             self.markAllMaterials(-1);
 
-
+            // Mark all vertices and materials, assuming they will
+            // not be used by this part
             dMesh.empty();
-            dMesh.setPartCount(1);
-            dMesh.pList = self.pList
+            // dMesh.setPartCount(1);
+            dMesh.pList.push(self.pList[partIndex].clone());
+
+            // Convert face list, simultaneously building material and
+            // vertex list
+
+            for tri in self.tList.iter_mut() {
+                if tri.part != partIndex {
+                    return;
+                }
+
+                let mut new_tri = tri.clone();
+
+                // Remap material index
+                let m = &mut self.mList[tri.material];
+                if m.mark < 0 {
+                    m.mark = dMesh.addMaterial(m.clone());
+                }
+                new_tri.material = m.mark as usize;
+
+                // Remap vertices
+                for j in 0..3 {
+                    let v = &mut self.vList[new_tri.v[j].index];
+                    if v.mark < 0 {
+                        v.mark = dMesh.addVertex(v.clone()) as i32;
+                    }
+                    new_tri.v[j].index = v.mark as usize;
+                }
+
+                // Add the face
+                new_tri.part = 0;
+                dMesh.addTri(new_tri);
+            }
         }
-
-    for (int partIndex = 0 ; partIndex < partCount() ; ++partIndex) {
-
-    // Get shortcut to destination mesh
-
-    EditTriMesh *dMesh = &meshes[partIndex];
-
-    // Mark all vertices and materials, assuming they will
-    // not be used by this part
-
-    markAllVertices(-1);
-    markAllMaterials(-1);
-
-    // Setup the destination part mesh with a single part
-
-    dMesh->empty();
-    dMesh->setPartCount(1);
-    dMesh->part(0) = part(partIndex);
-
-    // Convert face list, simultaneously building material and
-    // vertex list
-
-    for (int faceIndex = 0 ; faceIndex < triCount() ; ++faceIndex) {
-
-    // Fetch shortcut, make sure it belongs to this
-    // part
-
-    Tri *tPtr = &tri(faceIndex);
-    if (tPtr->part != partIndex) {
-    continue;
     }
 
-    // Make a copy
+    pub fn extractOnePartOneMaterial(
+        &mut self,
+        partIndex: usize,
+        materialIndex: usize,
+        result: &mut EditTriMesh,
+    ) {
+        // Mark all vertices, assuming they will not be used
 
-    Tri t = *tPtr;
+        self.markAllVertices(-1);
 
-    // Remap material index
+        // Setup the destination mesh with a single part and material
 
-    Material *m = &material(t.material);
-    if (m->mark < 0) {
-    m->mark = dMesh->addMaterial(*m);
-    }
-    t.material = m->mark;
+        result.empty();
+        // result->setPartCount(1);
+        result.pList.push(self.pList[partIndex].clone());
+        // result->setMaterialCount(1);
+        result.mList.push(self.mList[materialIndex].clone());
 
-    // Remap vertices
+        // Convert face list, simultaneously building vertex list
+        for tri in self.tList.iter_mut() {
+            // Make sure tri belongs to this
+            // part and uses this material
+            if tri.part != partIndex {
+                continue;
+            }
+            if tri.material != materialIndex {
+                continue;
+            }
 
-    for (int j = 0 ; j < 3 ; ++j) {
-    Vertex *v = &vertex(t.v[j].index);
-    if (v->mark < 0) {
-    v->mark = dMesh->addVertex(*v);
-    }
-    t.v[j].index = v->mark;
-    }
+            // Make a copy
+            let mut new_tri = tri.clone();
 
-    // Add the face
+            // Remap vertices
+            for j in 0..3 {
+                let v = &mut self.vList[new_tri.v[j].index];
+                if v.mark < 0 {
+                    v.mark = result.addVertex(v.clone()) as i32;
+                }
+                new_tri.v[j].index = v.mark as usize;
+            }
 
-    t.part = 0;
-    dMesh->addTri(t);
-    }
-    }
-        */
-    }
-
-    /*
-    pub fn extractOnePartOneMaterial(int partIndex, int materialIndex, EditTriMesh *result) {
-
-    // Mark all vertices, assuming they will not be used
-
-    markAllVertices(-1);
-
-    // Setup the destination mesh with a single part and material
-
-    result->empty();
-    result->setPartCount(1);
-    result->part(0) = part(partIndex);
-    result->setMaterialCount(1);
-    result->material(0) = material(materialIndex);
-
-    // Convert face list, simultaneously building vertex list
-
-    for (int faceIndex = 0 ; faceIndex < triCount() ; ++faceIndex) {
-
-    // Fetch shortcut, make sure it belongs to this
-    // part and uses this material
-
-    Tri *tPtr = &tri(faceIndex);
-    if (tPtr->part != partIndex) {
-    continue;
-    }
-    if (tPtr->material != materialIndex) {
-    continue;
-    }
-
-    // Make a copy
-
-    Tri t = *tPtr;
-
-    // Remap vertices
-
-    for (int j = 0 ; j < 3 ; ++j) {
-    Vertex *v = &vertex(t.v[j].index);
-    if (v->mark < 0) {
-    v->mark = result->addVertex(*v);
-    }
-    t.v[j].index = v->mark;
-    }
-
-    // Add the face
-
-    t.part = 0;
-    t.material = 0;
-    result->addTri(t);
-    }
+            // Add the face
+            new_tri.part = 0;
+            new_tri.material = 0;
+            result.addTri(new_tri);
+        }
     }
 
     /////////////////////////////////////////////////////////////////////////////
@@ -1184,42 +1161,60 @@ impl EditTriMesh {
     //
     // Compute a single triangle normal.
 
-    pub fn computeOneTriNormal(int triIndex) {
-    computeOneTriNormal(tri(triIndex));
+    pub fn computeOneTriNormal_with_index(&mut self, triIndex: usize) {
+        let t = &mut self.tList[triIndex];
+
+        // Would be nice to call computeOneTriNormal but that causes
+        // error[E0499]: cannot borrow `*self` as mutable more than once at a time
+        // Don't know how to fix that yet.
+        //&self.computeOneTriNormal(tri);
+
+        // Fetch shortcuts to vertices
+        let v1 = &self.vList[t.v[0].index].p;
+        let v2 = &self.vList[t.v[1].index].p;
+        let v3 = &self.vList[t.v[2].index].p;
+
+        // Compute clockwise edge vectors.  We use the edge vector
+        // indexing that agrees with Section 12.6.
+        let e1 = &*v3 - &*v2;
+        let e2 = &*v1 - &*v3;
+
+        // Cross product to compute surface normal
+        t.normal = cross_product(&e1, &e2);
+
+        // Normalize it
+        t.normal.normalize();
     }
 
-    pub fn computeOneTriNormal(Tri &t) {
+    pub fn computeOneTriNormal(&mut self, t: &mut Tri) {
+        // Fetch shortcuts to vertices
+        let v1 = &self.vList[t.v[0].index].p;
+        let v2 = &self.vList[t.v[1].index].p;
+        let v3 = &self.vList[t.v[2].index].p;
 
-    // Fetch shortcuts to vertices
+        // Compute clockwise edge vectors.  We use the edge vector
+        // indexing that agrees with Section 12.6.
+        let e1 = &*v3 - &*v2;
+        let e2 = &*v1 - &*v3;
 
-    Vector3 &v1 = vertex(t.v[0].index).p;
-    Vector3 &v2 = vertex(t.v[1].index).p;
-    Vector3 &v3 = vertex(t.v[2].index).p;
+        // Cross product to compute surface normal
+        t.normal = cross_product(&e1, &e2);
 
-    // Compute clockwise edge vectors.  We use the edge vector
-    // indexing that agrees with Section 12.6.
-
-    Vector3 e1 = v3 - v2;
-    Vector3 e2 = v1 - v3;
-
-    // Cross product to compute surface normal
-
-    t.normal = crossProduct(e1, e2);
-
-    // Normalize it
-
-    t.normal.normalize();
+        // Normalize it
+        t.normal.normalize();
     }
 
     //---------------------------------------------------------------------------
     // computeTriNormals
     //
     // Compute all the triangle normals
-
-    pub fn computeTriNormals() {
-    for (int i = 0 ; i < triCount() ; ++i) {
-    computeOneTriNormal(tri(i));
-    }
+    pub fn computeTriNormals(&mut self) {
+        for i in 0..self.tList.len() {
+            self.computeOneTriNormal_with_index(i)
+        }
+        // for tri in self.tList.iter_mut() {
+        //     self.computeOneTriNormal(tri);
+        // }
     }
 
     //---------------------------------------------------------------------------
@@ -1228,35 +1223,27 @@ impl EditTriMesh {
     // Compute vertex level surface normals.  This automatically computes the
     // triangle level surface normals
 
-    pub fn computeVertexNormals() {
+    pub fn computeVertexNormals(&mut self) {
+        // First, make sure triangle level surface normals are up-to-date
+        self.computeTriNormals();
 
-    int	i;
+        // Zero out vertex normals
+        for vertex in self.vList.iter_mut() {
+            vertex.normal.set_to_zero();
+        }
 
-    // First, make sure triangle level surface normals are up-to-date
+        // Sum in the triangle normals into the vertex normals
+        // that are used by the triangle
+        for tri in self.tList.iter_mut() {
+            for j in 0..3 {
+                self.vList[tri.v[j].index].normal += &tri.normal;
+            }
+        }
 
-    computeTriNormals();
-
-    // Zero out vertex normals
-
-    for (i = 0 ; i < vertexCount() ; ++i) {
-    vertex(i).normal.zero();
-    }
-
-    // Sum in the triangle normals into the vertex normals
-    // that are used by the triangle
-
-    for (i = 0 ; i < triCount() ; ++i) {
-    Tri *t = &tri(i);
-    for (int j = 0 ; j < 3 ; ++j) {
-    vertex(t->v[j].index).normal += t->normal;
-    }
-    }
-
-    // Now "average" the vertex surface normals, by normalizing them
-
-    for (i = 0 ; i < vertexCount() ; ++i) {
-    vertex(i).normal.normalize();
-    }
+        // Now "average" the vertex surface normals, by normalizing them
+        for vertex in self.vList.iter_mut() {
+            vertex.normal.normalize();
+        }
     }
 
     //---------------------------------------------------------------------------
@@ -1264,19 +1251,17 @@ impl EditTriMesh {
     //
     // Compute the bounding box of the mesh
 
-    AABB3	computeBounds() {
+    pub fn computeBounds(&mut self) -> AABB3 {
+        // Generate the bounding box of the vertices
+        let mut bounding_box = AABB3::new();
+        bounding_box.empty();
 
-    // Generate the bounding box of the vertices
+        for vertex in self.vList.iter_mut() {
+            bounding_box.add_vector3(&vertex.p);
+        }
 
-    AABB3	box;
-    box.empty();
-    for (int i = 0 ; i < vertexCount() ; ++i) {
-    box.add(vertex(i).p);
-    }
-
-    // Return it
-
-    return box;
+        // Return it
+        return bounding_box;
     }
 
     /////////////////////////////////////////////////////////////////////////////
@@ -1289,101 +1274,80 @@ impl EditTriMesh {
     // optimizeVertexOrder
     //
     // Re-order the vertex list, in the order that they are used by the faces.
-    // This can improve cache performace and vertex caching by increasing the
+    // This can improve cache performance and vertex caching by increasing the
     // locality of reference.
     //
     // If removeUnusedVertices is true, then any unused vertices are discarded.
     // Otherwise, they are retained at the end of the vertex list.  Normally
-    // you will want to discard them, which is why we default the paramater to
+    // you will want to discard them, which is why we default the parameter to
     // true.
+    pub fn optimizeVertexOrder(&mut self, removeUnusedVertices: bool) {
+        // Mark all vertices with a very high mark, which assumes
+        // that they will not be used
+        let v_count = self.vList.len() as i32;
+        for vertex in self.vList.iter_mut() {
+            vertex.mark = v_count;
+        }
 
-    pub fn optimizeVertexOrder(bool removeUnusedVertices) {
+        // Scan the face list, and figure out where the vertices
+        // will end up in the new, ordered list.  At the same time,
+        // we remap the indices in the triangles according to this
+        // new ordering.
+        let mut usedVertexCount = 0;
 
-    int	i;
+        for tri in self.tList.iter_mut() {
+            // Process each of the three vertices on this triangle
+            for j in 0..3 {
+                // Get shortcut to the vertex used
+                let v = &mut self.vList[tri.v[j].index];
 
-    // Mark all vertices with a very high mark, which assumes
-    // that they will not be used
+                // Has it been used already?
+                if v.mark == v_count {
+                    // We're the first triangle to use
+                    // this one.  Assign the vertex to
+                    // the next slot in the new vertex
+                    // list
+                    v.mark = usedVertexCount;
+                    usedVertexCount += 1;
+                }
 
-    for (i = 0 ; i < vertexCount() ; ++i) {
-    vertex(i).mark = vertexCount();
-    }
+                // Remap the vertex index
+                tri.v[j].index = v.mark as usize;
+            }
+        }
 
-    // Scan the face list, and figure out where the vertices
-    // will end up in the new, ordered list.  At the same time,
-    // we remap the indices in the triangles according to this
-    // new ordering.
+        // Re-sort the vertex list.  This puts the used vertices
+        // in order where they go, and moves all the unused vertices
+        // to the end (in no particular order, since qsort is not
+        // a stable sort)
+        self.vList.sort_by(vertexCompareByMark);
 
-    int	usedVertexCount = 0;
-    for (i = 0 ; i < triCount() ; ++i) {
-    Tri *t = &tri(i);
+        // Did they want to discard the unused guys?
 
-    // Process each of the three vertices on this triangle
-
-    for (int j = 0 ; j < 3 ; ++j) {
-
-    // Get shortcut to the vertex used
-
-    Vertex *v = &vertex(t->v[j].index);
-
-    // Has it been used already?
-
-    if (v->mark == vertexCount()) {
-
-    // We're the first triangle to use
-    // this one.  Assign the vertex to
-    // the next slot in the new vertex
-    // list
-
-    v->mark = usedVertexCount;
-    ++usedVertexCount;
-    }
-
-    // Remap the vertex index
-
-    t->v[j].index = v->mark;
-    }
-    }
-
-    // Re-sort the vertex list.  This puts the used vertices
-    // in order where they go, and moves all the unused vertices
-    // to the end (in no particular order, since qsort is not
-    // a stable sort)
-
-    qsort(vList, vertexCount(), sizeof(Vertex), vertexCompareByMark);
-
-    // Did they want to discard the unused guys?
-
-    if (removeUnusedVertices) {
-
-    // Yep - chop off the unused vertices by slamming
-    // the vertex count.  We don't call the function to
-    // set the vertex count here, since it will scan
-    // the triangle list for any triangle that use those
-    // vertices.  But we already know that all of the
-    // vertices we are deleting are unused
-
-    vCount = usedVertexCount;
-    }
+        if removeUnusedVertices {
+            // Yep - chop off the unused vertices by slamming
+            // the vertex count.  We don't call the function to
+            // set the vertex count here, since it will scan
+            // the triangle list for any triangle that use those
+            // vertices.  But we already know that all of the
+            // vertices we are deleting are unused
+            self.vList.truncate(usedVertexCount as usize);
+        }
     }
 
     //---------------------------------------------------------------------------
     // sortTrisByMaterial
     //
-    // Sort triangles by material.  This is VERY important for effecient
+    // Sort triangles by material.  This is VERY important for efficient
     // rendering
+    pub fn sortTrisByMaterial(&mut self) {
+        // Put the current index into the "mark" field so we can
+        // have a stable sort
+        for (i, tri) in self.tList.iter_mut().enumerate() {
+            tri.mark = i as i32;
+        }
 
-    pub fn sortTrisByMaterial() {
-
-    // Put the current index into the "mark" field so we can
-    // have a stable sort
-
-    for (int i = 0 ; i < triCount() ; ++i) {
-    tri(i).mark = i;
-    }
-
-    // Use qsort
-
-    qsort(tList, triCount(), sizeof(Tri), triCompareByMaterial);
+        self.tList.sort_by(triCompareByMaterial);
     }
 
     //---------------------------------------------------------------------------
@@ -1392,10 +1356,9 @@ impl EditTriMesh {
     // Weld coincident vertices.  For the moment, this disregards UVs and welds
     // all vertices that are within geometric tolerance
 
-    pub fn weldVertices(OptimizationParameters &opt) {
-
-    // !FIXME!
-
+    pub fn weldVertices(_opt: &OptimizationParameters) {
+        // !FIXME! - not implemented in the original C++ code
+        todo!()
     }
 
     //---------------------------------------------------------------------------
@@ -1403,367 +1366,133 @@ impl EditTriMesh {
     //
     // Ensure that the vertex UVs are correct, possibly duplicating
     // vertices if necessary
+    pub fn copyUvsIntoVertices(&mut self) {
+        // Mark all vertices indicating that their UV's are invalid
+        self.markAllVertices(0);
 
-    pub fn copyUvsIntoVertices() {
+        let tri_count = self.tList.len();
 
-    // Mark all vertices indicating thet their UV's are invalid
+        // Scan the faces, and shove in the UV's into the vertices
+        for triIndex in 0..tri_count {
+            let mut tri = &mut self.tList[triIndex];
 
-    markAllVertices(0);
+            for i in 0..3 {
+                let v_count = self.vList.len();
+                // Locate vertex
+                let vIndex = tri.v[i].index;
 
-    // Scan the faces, and shove in the UV's into the vertices
+                {
+                    let vPtr = &mut self.vList[vIndex];
 
-    for (int triIndex = 0 ; triIndex < triCount() ; ++triIndex) {
-    Tri *triPtr = &tri(triIndex);
-    for (int i = 0 ; i < 3 ; ++i) {
+                    // Have we filled in the UVs for this vertex yet?
+                    if vPtr.mark == 0 {
+                        // Nope. So set them
+                        vPtr.u = tri.v[i].u;
+                        vPtr.v = tri.v[i].v;
 
-    // Locate vertex
+                        // Mark UV's as valid, and keep going
+                        vPtr.mark = 1;
+                        continue;
+                    }
 
-    int	vIndex = triPtr->v[i].index;
-    Vertex *vPtr = &vertex(vIndex);
+                    // UV's have already been filled in by another face.
+                    // Did that face have the same UV's as me?
+                    if (vPtr.u == tri.v[i].u) && (vPtr.v == tri.v[i].v) {
+                        // Yep - no need to change anything
+                        continue;
+                    }
+                }
 
-    // Have we filled in the UVs for this vertex yet?
+                // OK, we can't use this vertex - somebody else already has
+                // it "claimed" with different UV's.  First, we'll search
+                // for another vertex with the same position.  Yikes -
+                // this requires a linear search through the vertex list.
+                // Luckily, this should not happen the majority of the time.
 
-    if (vPtr->mark == 0) {
+                let temp_vec = self.vList[vIndex].clone();
+                let mut foundOne = false;
+                for newIndex in 0..v_count {
+                    let newPtr = &mut self.vList[newIndex];
 
-    // Nope.  Shove them in
+                    // Is the position and normal correct?
+                    if (newPtr.p != temp_vec.p) || (newPtr.normal != temp_vec.normal) {
+                        continue;
+                    }
 
-    vPtr->u = triPtr->v[i].u;
-    vPtr->v = triPtr->v[i].v;
+                    // OK, this vertex is geometrically correct.
+                    // Has anybody filled in the UV's yet?
+                    if newPtr.mark == 0 {
+                        // We can claim this one.
+                        newPtr.mark = 1;
+                        newPtr.u = tri.v[i].u;
+                        newPtr.v = tri.v[i].v;
 
-    // Mark UV's as valid, and keep going
+                        // Remap vertex index
+                        tri.v[i].index = newIndex;
 
-    vPtr->mark = 1;
-    continue;
-    }
+                        // No need to keep looking
+                        foundOne = true;
+                        break;
+                    }
 
-    // UV's have already been filled in by another face.
-    // Did that face have the same UV's as me?
+                    // Already claimed by somebody else, so we can't change
+                    // them.  but are they correct, already anyway?
+                    if (newPtr.u == tri.v[i].u) && (newPtr.v == tri.v[i].v) {
+                        // Yep - no need to change anything.  Just remap the
+                        // vertex index
+                        tri.v[i].index = newIndex;
 
-    if (
-    (vPtr->u == triPtr->v[i].u) &&
-    (vPtr->v == triPtr->v[i].v)
-    ) {
+                        // No need to keep looking
+                        foundOne = true;
+                        break;
+                    }
 
-    // Yep - no need to change anything
+                    // No good - keep looking
+                }
 
-    continue;
-    }
+                // Did we find a vertex?
 
-    // OK, we can't use this vertex - somebody else already has
-    // it "claimed" with different UV's.  First, we'll search
-    // for another vertex with the same position.  Yikes -
-    // this requires a linear search through the vertex list.
-    // Luckily, this should not happen the majority of the time.
-
-    bool	foundOne = false;
-    for (int newIndex = 0 ; newIndex < vertexCount() ; ++newIndex) {
-    Vertex *newPtr = &vertex(newIndex);
-
-    // Is the position and normal correct?
-
-    if (
-    (newPtr->p != vPtr->p) ||
-    (newPtr->normal != vPtr->normal)
-    ) {
-    continue;
-    }
-
-    // OK, this vertex is geometrically correct.
-    // Has anybody filled in the UV's yet?
-
-    if (newPtr->mark == 0) {
-
-    // We can claim this one.
-
-    newPtr->mark = 1;
-    newPtr->u = triPtr->v[i].u;
-    newPtr->v = triPtr->v[i].v;
-
-    // Remap vertex index
-
-    triPtr->v[i].index = newIndex;
-
-    // No need to keep looking
-
-    foundOne = true;
-    break;
-    }
-
-    // Already claimed by somebody else, so we can't change
-    // them.  but are they correct, already anyway?
-
-    if (
-    (newPtr->u == triPtr->v[i].u) &&
-    (newPtr->v == triPtr->v[i].v)
-    ) {
-
-    // Yep - no need to change anything.  Just remap the
-    // vertex index
-
-    triPtr->v[i].index = newIndex;
-
-    // No need to keep looking
-
-    foundOne = true;
-    break;
-    }
-
-    // No good - keep looking
-    }
-
-    // Did we find a vertex?
-
-    if (!foundOne) {
-
-    // Nope, we'll have to create a new one
-
-    Vertex newVertex = *vPtr;
-    newVertex.mark = 1;
-    newVertex.u = triPtr->v[i].u;
-    newVertex.v = triPtr->v[i].v;
-    triPtr->v[i].index = addVertex(newVertex);
-    }
-    }
-    }
+                if !foundOne {
+                    // Nope, we'll have to create a new one
+                    let mut newVertex = temp_vec;
+                    newVertex.mark = 1;
+                    newVertex.u = tri.v[i].u;
+                    newVertex.v = tri.v[i].v;
+                    self.vList.push(newVertex);
+                    tri.v[i].index = self.vList.len() - 1;
+                }
+            }
+        }
     }
 
     // Do all of the optimizations and prepare the model
     // for fast rendering under *most* rendering systems,
     // with proper lighting.
 
-    pub fn optimizeForRendering() {
-    computeVertexNormals();
+    pub fn optimizeForRendering(&mut self) {
+        self.computeVertexNormals();
     }
 
-    /////////////////////////////////////////////////////////////////////////////
-    //
-    // EditTriMesh members - Import/Export S3D format
-    //
-    // For more on the S3D file format, and free tools for using the
-    // S3D format with popular rendering packages, visit
-    // gamemath.com
-    //
-    /////////////////////////////////////////////////////////////////////////////
+    /*
+        /////////////////////////////////////////////////////////////////////////////
+        //
+        // EditTriMesh members - Debugging
+        //
+        /////////////////////////////////////////////////////////////////////////////
 
-    //---------------------------------------------------------------------------
-    // importS3d
-    //
-    // Load up an S3D file.  Returns true on success.  If failure, returns
-    // false and puts an error message into returnErrMsg
+        pub fn validityCheck() {
+        char	errMsg[256];
+        if (!validityCheck(errMsg)) {
+        ABORT("EditTriMesh failed validity check:\n%s", errMsg);
+        }
+        }
 
-    bool	importS3d(char *filename, char *returnErrMsg) {
-    int	i;
-
-    // Try to open up the file
-
-    FILE *f = fopen(filename, "rt");
-    if (f == NULL) {
-    strcpy(returnErrMsg, "Can't open file");
-    failed:
-    empty();
-    if (f != NULL) {
-    fclose(f);
-    }
-    return false;
-    }
-
-    // Read and check version
-
-    if (!skipLine(f)) {
-    corrupt:
-    strcpy(returnErrMsg, "File is corrupt");
-    goto failed;
-    }
-    int	version;
-    if (fscanf(f, "%d\n", &version) != 1) {
-    goto corrupt;
-    }
-    if (version != 103) {
-    sprintf(returnErrMsg, "File is version %d - only version 103 supported", version);
-    goto failed;
-    }
-
-    // Read header
-
-    if (!skipLine(f)) {
-    goto corrupt;
-    }
-    int	numTextures, numTris, numVerts, numParts, numFrames, numLights, numCameras;
-    if (fscanf(f, "%d , %d , %d , %d , %d , %d , %d\n", &numTextures, &numTris, &numVerts, &numParts, &numFrames, &numLights, &numCameras) != 7) {
-    goto corrupt;
-    }
-
-    // Allocate lists
-
-    setMaterialCount(numTextures);
-    setTriCount(numTris);
-    setVertexCount(numVerts);
-    setPartCount(numParts);
-
-    // Read part list.  the only number we care about
-    // is the triangle count, which we'll temporarily
-    // stach into the mark field
-
-    if (!skipLine(f)) {
-    goto corrupt;
-    }
-    int	firstVert = 0, firstTri = 0;
-    for (i = 0 ; i < numParts ; ++i) {
-    Part *p = &part(i);
-    int	partFirstVert, partNumVerts, partFirstTri, partNumTris;
-    if (fscanf(f, "%d , %d , %d , %d , \"%[^\"]\"\n", &partFirstVert, &partNumVerts, &partFirstTri, &partNumTris, p->name) != 5) {
-    sprintf(returnErrMsg, "Corrupt at part %d", i);
-    goto failed;
-    }
-    if (firstVert != partFirstVert || firstTri != partFirstTri) {
-    sprintf(returnErrMsg, "Part vertex/tri mismatch detected at part %d", i);
-    goto failed;
-    }
-    p->mark = partNumTris;
-    firstVert += partNumVerts;
-    firstTri += partNumTris;
-    }
-    if (firstVert != numVerts || firstTri != numTris) {
-    strcpy(returnErrMsg, "Part vertex/tri mismatch detected at end of part list");
-    goto failed;
-    }
-
-    // Read textures.
-
-    if (!skipLine(f)) {
-    goto corrupt;
-    }
-    for (i = 0 ; i < numTextures ; ++i) {
-    Material	*m = &material(i);
-
-    // Fetch line of text
-
-    if (fgets(m->diffuseTextureName, sizeof(m->diffuseTextureName), f) != m->diffuseTextureName) {
-    sprintf(returnErrMsg, "Corrupt reading texture %d", i);
-    goto failed;
-    }
-
-    // Styrip off newline, which fgets leaves.
-    // Wouldn't it have been nice if the stdio
-    // functions would just have a function to read a line
-    // WITHOUT the newline character.  What a pain...
-
-    char *nl = strchr(m->diffuseTextureName, '\n');
-    if (nl != NULL) {
-    *nl = '\0';
-    }
-    }
-
-    // Read triangles a part at a time
-
-    if (!skipLine(f)) {
-    goto corrupt;
-    }
-    int	whiteTextureIndex = -1;
-    int	destTriIndex = 0;
-    for (int partIndex = 0 ; partIndex < numParts ; ++partIndex) {
-
-    // Read all triangles in this part
-
-    for (int i = 0 ; i < part(partIndex).mark ; ++i) {
-
-    // get shortcut to destination triangle
-
-    Tri *t = &tri(destTriIndex);
-
-    // Slam part number
-
-    t->part = partIndex;
-
-    // Parse values from file
-
-    if (fscanf(f, "%d , %d , %f , %f , %d , %f , %f , %d , %f , %f\n",
-    &t->material,
-    &t->v[0].index, &t->v[0].u, &t->v[0].v,
-    &t->v[1].index, &t->v[1].u, &t->v[1].v,
-    &t->v[2].index, &t->v[2].u, &t->v[2].v
-    ) != 10) {
-    sprintf(returnErrMsg, "Corrupt reading triangle %d (%d of part %d)", destTriIndex, i, partIndex);
-    goto failed;
-    }
-
-    // Check for untextured triangle
-
-    if (t->material < 0) {
-    if (whiteTextureIndex < 0) {
-    Material whiteMaterial;
-    strcpy(whiteMaterial.diffuseTextureName, "White");
-    whiteTextureIndex = addMaterial(whiteMaterial);
-    }
-    t->material = whiteTextureIndex;
-    }
-
-    // Scale UV's to 0...1 range
-
-    t->v[0].u /= 256.0f;
-    t->v[0].v /= 256.0f;
-    t->v[1].u /= 256.0f;
-    t->v[1].v /= 256.0f;
-    t->v[2].u /= 256.0f;
-    t->v[2].v /= 256.0f;
-
-    // Next triangle, please
-
-    ++destTriIndex;
-    }
-    }
-    assert(destTriIndex == triCount());
-
-    // Read vertices
-
-    if (!skipLine(f)) {
-    goto corrupt;
-    }
-    for (i = 0 ; i < numVerts ; ++i) {
-    Vertex *v = &vertex(i);
-    if (fscanf(f, "%f , %f , %f\n", &v->p.x, &v->p.y, &v->p.z) != 3) {
-    sprintf(returnErrMsg, "Corrupt reading vertex %d", i);
-    goto failed;
-    }
-    }
-
-    // OK, we don't need anything from the rest of the file.  Close file.
-
-    fclose(f);
-    f = NULL;
-
-    // Check for structural errors in the mesh
-
-    if (!validityCheck(returnErrMsg)) {
-    goto failed;
-    }
-
-    // OK!
-
-    return true;
-    }
-
-    pub fn exportS3d(char *filename) {
-    }
-
-    /////////////////////////////////////////////////////////////////////////////
-    //
-    // EditTriMesh members - Debugging
-    //
-    /////////////////////////////////////////////////////////////////////////////
-
-    pub fn validityCheck() {
-    char	errMsg[256];
-    if (!validityCheck(errMsg)) {
-    ABORT("EditTriMesh failed validity check:\n%s", errMsg);
-    }
-    }
-
-    bool	validityCheck(char *returnErrMsg) {
-    return true;
-    }
-
-    }
+        bool	validityCheck(char *returnErrMsg) {
+        return true;
+        }
+    */
+}
+/*
 
     //---------------------------------------------------------------------------
     // operator=
@@ -1841,26 +1570,19 @@ impl EditTriMesh {
     return *this;
     }
 
+*/
 
+/////////////////////////////////////////////////////////////////////////////
+//
+// Local utility stuff
+//
+/////////////////////////////////////////////////////////////////////////////
 
-    /////////////////////////////////////////////////////////////////////////////
-    //
-    // Local utility stuff
-    //
-    /////////////////////////////////////////////////////////////////////////////
-
-    //---------------------------------------------------------------------------
-    // vertexCompareByMark
-    //
-    // Compare two vertices by their mark field.  Used to sort using qsort.
-
-    static int vertexCompareByMark(void *va, void *vb) {
-
-    // Cast pointers
-
-    Vertex *a = (Vertex *)va;
-    Vertex *b = (Vertex *)vb;
-
+//---------------------------------------------------------------------------
+// vertexCompareByMark
+//
+// Compare two vertices by their mark field.  Used to sort using sort_by.
+pub fn vertexCompareByMark(a: &Vertex, b: &Vertex) -> Ordering {
     // Return comparison result as per Qsort conventions:
     //
     // <0	a goes "before" b
@@ -1868,22 +1590,21 @@ impl EditTriMesh {
     // 0	doesn't matter
     //
     // We want the lower mark to come first
-
-    return a->mark - b->mark;
+    let cmp = a.mark - b.mark;
+    if cmp < 0 {
+        return Ordering::Less;
     }
+    if cmp > 0 {
+        return Ordering::Greater;
+    }
+    Ordering::Equal
+}
 
-    //---------------------------------------------------------------------------
-    // triCompareByMaterial
-    //
-    // Compare two triangles by their material field.  Used to sort using qsort.
-
-    static int triCompareByMaterial(void *va, void *vb) {
-
-    // Cast pointers
-
-    Tri *a = (Tri *)va;
-    Tri *b = (Tri *)vb;
-
+//---------------------------------------------------------------------------
+// triCompareByMaterial
+//
+// Compare two triangles by their material field.  Used to sort using qsort.
+pub fn triCompareByMaterial(a: &Tri, b: &Tri) -> Ordering {
     // Return comparison result as per Qsort conventions:
     //
     // <0	a goes "before" b
@@ -1891,31 +1612,40 @@ impl EditTriMesh {
     // 0	doesn't matter
     //
     // We want the lower material to come first
-
-    if (a->material < b->material) return -1;
-    if (a->material > b->material) return +1;
+    if a.material < b.material {
+        return Ordering::Less;
+    }
+    if a.material > b.material {
+        return Ordering::Greater;
+    }
 
     // Same material - use "mark" field, which contained the
     // original index, so we'll have a stable sort
-
-    return a->mark - b->mark;
+    let cmp = a.mark - b.mark;
+    if cmp < 0 {
+        return Ordering::Less;
     }
-
-    //---------------------------------------------------------------------------
-    // skipLine
-    //
-    // Skip a line of text from a file.  Returns false on failure (EOF or error).
-
-    static bool	skipLine(FILE *f) {
-    for (;;) {
-    int c = fgetc(f);
-    if (c < 0) {
-    return false;
+    if cmp > 0 {
+        return Ordering::Greater;
     }
-    if (c == '\n') {
-    return true;
-    }
-    }
-
-     */
+    Ordering::Equal
 }
+
+//---------------------------------------------------------------------------
+// skipLine
+//
+// Skip a line of text from a file.  Returns false on failure (EOF or error).
+
+/*
+pub fn skipLine(FILE *f) -> bool {
+for (;;) {
+int c = fgetc(f);
+if (c < 0) {
+return false;
+}
+if (c == '\n') {
+return true;
+}
+}
+
+ */

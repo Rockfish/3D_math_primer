@@ -4,6 +4,7 @@
 pub mod aabb3;
 pub mod config;
 pub mod edit_tri_mesh;
+pub mod edit_tri_mesh_s3d;
 pub mod euler_angles;
 pub mod matrix4x3;
 pub mod quaternion;

@@ -3,13 +3,13 @@
 use crate::matrix4x3::Matrix4x3;
 use std::ops;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct Vec2 {
     pub x: f32,
     pub y: f32,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct Vector3 {
     pub x: f32,
     pub y: f32,
@@ -27,6 +27,12 @@ impl Vector3 {
             y: 0.0,
             z: 0.0,
         }
+    }
+
+    pub fn set_to_zero(&mut self) {
+        self.x = 0.0;
+        self.y = 0.0;
+        self.z = 0.0;
     }
 
     pub fn identity() -> Vector3 {
@@ -117,11 +123,11 @@ pub fn distance_squared(a: &Vector3, b: &Vector3) -> f32 {
     dx * dx + dy * dy + dz * dz
 }
 
-impl PartialEq<&Vector3> for &Vector3 {
-    fn eq(&self, other: &&Vector3) -> bool {
-        (self.x == other.x) && (self.y == other.y) && (self.z == other.z)
-    }
-}
+// impl PartialEq<&Vector3> for &Vector3 {
+//     fn eq(&self, other: &&Vector3) -> bool {
+//         (self.x == other.x) && (self.y == other.y) && (self.z == other.z)
+//     }
+// }
 
 // for operator = (assign) in rust use clone()
 
