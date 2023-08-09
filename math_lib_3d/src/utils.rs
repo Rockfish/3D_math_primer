@@ -1,6 +1,10 @@
 #![allow(dead_code)]
 
 use std::f32::consts::*;
+use std::fs::File;
+use std::io::{self, BufReader, Read};
+use std::mem::{size_of, MaybeUninit};
+use std::slice::from_raw_parts_mut;
 
 /*
 const float kPi = 3.14159265f;
@@ -34,4 +38,21 @@ pub fn safe_acos(x: f32) -> f32 {
 
 pub fn atan2(a: f32, b: f32) -> f32 {
     a.atan2(b)
+}
+
+// Read packed structs from a file
+pub fn read_raw_struct<R: Read, T: Sized>(mut src: &File) -> io::Result<T> {
+    unsafe {
+        let mut buffer = MaybeUninit::uninit();
+        let buffer_slice = from_raw_parts_mut(buffer.as_mut_ptr() as *mut u8, size_of::<T>());
+
+        src.read_exact(buffer_slice)?;
+        Ok(buffer.assume_init())
+    }
+}
+
+pub fn get_u8(buffer: &mut BufReader<File>) -> u8 {
+    let mut buf: [u8; 1] = [0];
+    buffer.read_exact(&mut buf).unwrap();
+    buf[0]
 }

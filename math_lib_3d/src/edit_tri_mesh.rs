@@ -82,16 +82,16 @@ pub struct Material {
 
 #[derive(Clone, Debug)]
 pub struct Part {
-    name: String,
+    pub name: String,
     // Utility "mark" variable, often handy
-    mark: i32,
+    pub mark: i32,
 }
 
 #[derive(Clone, Debug)]
 pub struct OptimizationParameters {
     // A tolerance value which is used to
     // determine if two vertices are coincident.
-    coincidentVertexTolerance: f32,
+    pub coincidentVertexTolerance: f32,
 
     // Triangle angle tolerance.  Vertices
     // are not welded if the are on an edge
@@ -100,7 +100,7 @@ pub struct OptimizationParameters {
     // far apart.  We store the cosine of this
     // value since that's what's actually used.
     // Use the functions to set it
-    cosOfEdgeAngleTolerance: f32,
+    pub cosOfEdgeAngleTolerance: f32,
 }
 
 impl Vertex {
@@ -136,7 +136,7 @@ impl Tri {
             v: [Vert::default(), Vert::default(), Vert::default()],
             normal: Vector3::identity(),
             part: 0,
-            material: 0,
+            material: usize::MAX, // MAX indicates it is unset
             mark: 0,
         }
     }

@@ -2,14 +2,15 @@
 #![feature(extract_if)]
 
 pub mod aabb3;
+pub mod bitmap;
 pub mod config;
 pub mod edit_tri_mesh;
-pub mod edit_tri_mesh_s3d;
 pub mod euler_angles;
 pub mod matrix4x3;
 pub mod quaternion;
 pub mod renderer;
 pub mod rotation_matrix;
+pub mod s3d_handler;
 pub mod tri_mesh;
 pub mod utils;
 pub mod vector3;
