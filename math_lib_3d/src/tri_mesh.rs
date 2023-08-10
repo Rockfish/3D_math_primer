@@ -1,4 +1,6 @@
 #![allow(dead_code)]
+#![allow(non_snake_case)]
+#![allow(non_camel_case_types)]
 
 use crate::aabb3::*;
 use crate::config::Config;
@@ -99,12 +101,12 @@ impl TriMesh {
     //
     // Render the mesh using current 3D renderer context
 
-    pub fn render(&self, config: &Config) {
-        config.renderer.renderTriMesh(
+    pub fn render(&self, config: &mut Config) {
+        config.renderer.renderTriMesh_vertlist(
             &self.vertexList,
-            &self.vertexCount,
+            self.vertexCount,
             &self.triList,
-            &self.triCount,
+            self.triCount as usize,
         );
     }
 

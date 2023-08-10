@@ -2,13 +2,12 @@ use math_lib_3d;
 use math_lib_3d::bitmap::*;
 use math_lib_3d::utils::read_raw_struct;
 use std::fs::File;
-use std::io;
 
 #[test]
 fn test_read_bitmap_header() {
     let filename = "/Users/john/Dev_Rust/Dev/math_lib_3d/viewer/AR_COUCH.tga";
 
-    let mut file = File::open(filename).unwrap();
+    let file = File::open(filename).unwrap();
     let r = read_raw_struct::<File, TGAHeader>(&file);
 
     match r {
@@ -30,5 +29,4 @@ fn test_read_tga() {
 
     println!("result: {:?}", result);
     println!("bitmap: {:?}", bitmap);
-
 }

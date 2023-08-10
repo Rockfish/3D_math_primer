@@ -1,6 +1,5 @@
 #![allow(dead_code)]
 
-use crate::matrix4x3::Matrix4x3;
 use std::ops;
 
 #[derive(Clone, PartialEq, Debug)]

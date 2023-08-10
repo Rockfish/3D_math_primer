@@ -1,3 +1,6 @@
+#![allow(non_snake_case)]
+#![allow(non_camel_case_types)]
+
 use debug_print::debug_println;
 use scanf::sscanf;
 use std::fs::File;
@@ -72,7 +75,8 @@ pub fn import_s3d(filename: &str) -> Result<EditTriMesh, Error> {
             numFrames,
             numLights,
             numCameras
-        );
+        )
+        .unwrap();
         debug_println!(
             "{},{},{},{},{},{},{}",
             numTextures,
@@ -120,7 +124,8 @@ pub fn import_s3d(filename: &str) -> Result<EditTriMesh, Error> {
                 partFirstTri,
                 partNumTris,
                 name
-            );
+            )
+            .unwrap();
             debug_println!(
                 "{},{},{},{},\"{}\"",
                 partFirstVert,
@@ -166,7 +171,7 @@ pub fn import_s3d(filename: &str) -> Result<EditTriMesh, Error> {
         let mut name = String::new();
 
         if let Some(Ok(texture_name)) = lines.next() {
-            sscanf!(&texture_name, "{}", name);
+            sscanf!(&texture_name, "{}", name).unwrap();
             debug_println!("{}", name);
         }
 
@@ -222,7 +227,8 @@ pub fn import_s3d(filename: &str) -> Result<EditTriMesh, Error> {
                     v3_index,
                     v3_u,
                     v3_v,
-                );
+                )
+                .unwrap();
 
                 t.material = if materialIndex < 0 {
                     usize::MAX
@@ -290,7 +296,7 @@ pub fn import_s3d(filename: &str) -> Result<EditTriMesh, Error> {
 
     for i in 0..numVerts {
         if let Some(Ok(vertex)) = lines.next() {
-            sscanf!(&vertex, "{}, {}, {}", x, y, z);
+            sscanf!(&vertex, "{}, {}, {}", x, y, z).unwrap();
             debug_println!("{}, {}, {}", x, y, z);
 
             let mut v = Vertex::default();

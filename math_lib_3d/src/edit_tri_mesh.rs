@@ -1,4 +1,6 @@
 #![allow(dead_code)]
+#![allow(non_snake_case)]
+#![allow(non_camel_case_types)]
 
 use crate::aabb3::AABB3;
 use crate::matrix4x3::Matrix4x3;
@@ -274,6 +276,22 @@ impl EditTriMesh {
     //     // assert(partIndex < pCount);
     //     return self.pList[partIndex];
     // }
+
+    pub fn materialCount(&self) -> usize {
+        self.mList.len()
+    }
+
+    pub fn partCount(&self) -> usize {
+        self.pList.len()
+    }
+
+    pub fn triCount(&self) -> usize {
+        self.tList.len()
+    }
+
+    pub fn vertexCount(&self) -> usize {
+        self.vList.len()
+    }
 
     /////////////////////////////////////////////////////////////////////////////
     //
@@ -673,7 +691,7 @@ impl EditTriMesh {
 
     pub fn deleteVertex(&mut self, vertexIndex: usize) {
         // Check index.  Warn in debug build, don't crash release
-        if (vertexIndex < 0) || (vertexIndex >= self.vList.len()) {
+        if vertexIndex >= self.vList.len() {
             debug_assert!(
                 false,
                 "{}",
@@ -727,7 +745,7 @@ impl EditTriMesh {
 
     pub fn deleteMaterial(&mut self, materialIndex: usize) {
         // Check index.  Warn in debug build, don't crash release
-        if (materialIndex < 0) || (materialIndex >= self.vList.len()) {
+        if materialIndex >= self.vList.len() {
             debug_assert!(
                 false,
                 "{}",
@@ -761,7 +779,7 @@ impl EditTriMesh {
 
     pub fn deletePart(&mut self, partIndex: usize) {
         // Check index.  Warn in debug build, don't crash release
-        if (partIndex < 0) || (partIndex >= self.vList.len()) {
+        if partIndex >= self.vList.len() {
             debug_assert!(
                 false,
                 "{}",
@@ -1374,7 +1392,7 @@ impl EditTriMesh {
 
         // Scan the faces, and shove in the UV's into the vertices
         for triIndex in 0..tri_count {
-            let mut tri = &mut self.tList[triIndex];
+            let tri = &mut self.tList[triIndex];
 
             for i in 0..3 {
                 let v_count = self.vList.len();

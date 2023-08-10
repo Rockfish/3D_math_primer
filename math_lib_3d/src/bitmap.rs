@@ -3,14 +3,10 @@
 #![allow(non_camel_case_types)]
 
 use crate::renderer::make_argb;
-use crate::utils::{get_u8, read_raw_struct};
+use crate::utils::{read_raw_struct, read_u8};
 use debug_print::debug_print;
-use std::fs::{self, File};
-use std::io::{self, BufReader, Read};
-use std::mem::{size_of, MaybeUninit};
-use std::path::Path;
-use std::slice::from_raw_parts_mut;
-use std::{mem, slice};
+use std::fs::File;
+use std::io::BufReader;
 
 #[derive(Debug)]
 pub enum EFormat {
@@ -45,7 +41,6 @@ pub struct TGAHeader {
 }
 
 impl Bitmap {
-
     pub fn default() -> Bitmap {
         Bitmap {
             sizeX: 0,
@@ -92,7 +87,7 @@ impl Bitmap {
     pub fn getPix(&self, x: usize, y: usize) -> u32 {
         // Safety check
 
-        if (x < 0) || (y < 0) || (x >= self.sizeX) || (y >= self.sizeY) || (self.data.is_empty()) {
+        if (x >= self.sizeX) || (y >= self.sizeY) || (self.data.is_empty()) {
             assert!(false, "coordinates out of bounds");
             return 0;
         }
@@ -124,7 +119,7 @@ impl Bitmap {
     pub fn setPix(&mut self, x: usize, y: usize, argb: u32) {
         // Safety check
 
-        if (x < 0) || (y < 0) || (x >= self.sizeX) || (y >= self.sizeY) || (self.data.is_empty()) {
+        if (x >= self.sizeX) || (y >= self.sizeY) || (self.data.is_empty()) {
             assert!(false, "coordinates out of bounds");
             return;
         }
@@ -180,7 +175,7 @@ impl Bitmap {
         let file = File::open(filename).unwrap();
 
         // Read TGA header
-        let mut header: TGAHeader;
+        let header: TGAHeader;
         let r = read_raw_struct::<File, TGAHeader>(&file);
         match r {
             Ok(data) => {
@@ -254,18 +249,18 @@ impl Bitmap {
 
             // Read in the data for this row
 
-            for x in 0..self.sizeX {
-                let b = get_u8(&mut buffered);
-                let g = get_u8(&mut buffered);
-                let r = get_u8(&mut buffered);
+            for _x in 0..self.sizeX {
+                let b = read_u8(&mut buffered);
+                let g = read_u8(&mut buffered);
+                let r = read_u8(&mut buffered);
 
                 let a = if header.bitsPerPixel == 24 {
                     255
                 } else {
-                    get_u8(&mut buffered)
+                    read_u8(&mut buffered)
                 };
 
-                assert!(!(b < 0 || g < 0 || r < 0 || a < 0), "bad values");
+                // assert!(!(b < 0 || g < 0 || r < 0 || a < 0), "bad values");
 
                 let argb = make_argb(a as u32, r as u32, g as u32, b as u32);
 
@@ -280,7 +275,7 @@ impl Bitmap {
     //
     // Load image in .BMP format.
 
-    pub fn loadBMP(&mut self, filename: &str) -> Result<bool, String> {
+    pub fn loadBMP(&mut self, _filename: &str) -> Result<bool, String> {
         // Free up anything already allocated
         self.freeMemory();
         todo!();

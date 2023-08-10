@@ -7,6 +7,7 @@ pub mod config;
 pub mod edit_tri_mesh;
 pub mod euler_angles;
 pub mod matrix4x3;
+pub mod model;
 pub mod quaternion;
 pub mod renderer;
 pub mod rotation_matrix;

@@ -1,10 +1,9 @@
 #![allow(dead_code)]
+#![allow(non_snake_case)]
+#![allow(non_camel_case_types)]
 
 use crate::euler_angles::*;
 use crate::matrix4x3::Matrix4x3;
-use crate::renderer::BackfaceMode::BackfaceModeCCW;
-use crate::renderer::DestBlendMode::DestBlendModeInvSrcAlpha;
-use crate::renderer::SourceBlendMode::*;
 use crate::vector3::*;
 use once_cell::sync::Lazy;
 use std::sync::Mutex;
@@ -140,10 +139,10 @@ pub fn get_b(argb: u32) -> u32 {
 // also when setting the video mode.
 
 pub struct VideoMode {
-    x_res: i32,          // horizontal resolution, in pixels
-    y_res: i32,          // vertical resolution, in pixels
-    bits_per_pixel: i32, // currently only 16, 24, or 32 supported
-    refresh_hz: i32,     // you can use one of kRefreshRateXxx constants when setting the video mode
+    pub x_res: i32,          // horizontal resolution, in pixels
+    pub y_res: i32,          // vertical resolution, in pixels
+    pub bits_per_pixel: i32, // currently only 16, 24, or 32 supported
+    pub refresh_hz: i32, // you can use one of kRefreshRateXxx constants when setting the video mode
 }
 
 //---------------------------------------------------------------------------
@@ -207,6 +206,12 @@ pub struct RenderTri {
     c: u16,
 }
 
+impl RenderTri {
+    pub fn new(a: u16, b: u16, c: u16) -> RenderTri {
+        RenderTri { a, b, c }
+    }
+}
+
 //---------------------------------------------------------------------------
 // struct TextureReference
 //
@@ -214,7 +219,7 @@ pub struct RenderTri {
 
 pub struct TextureReference {
     // Name of the texture.  Usually this is a filename
-    name: String, // [MAX_TEXTURE_NAME_CHARS]; // todo: revisit
+    pub name: String, // [MAX_TEXTURE_NAME_CHARS]; // todo: revisit
 
     // Texture handle, within the graphics system
     handle: i32, // Todo: needed?
@@ -354,8 +359,8 @@ impl Renderer {
             depth_buffer_read: true,
             depth_buffer_write: true,
             blend_enable: true,
-            source_blend_mode: SourceBlendModeSrcAlpha,
-            dest_blend_mode: DestBlendModeInvSrcAlpha,
+            source_blend_mode: SourceBlendMode::SourceBlendModeSrcAlpha,
+            dest_blend_mode: DestBlendMode::DestBlendModeInvSrcAlpha,
             constant_argb: make_argb(255, 0, 0, 0),
             constant_opacity: 1.0,
             fog_enable: false,
@@ -370,7 +375,7 @@ impl Renderer {
                 z: 0.0,
             },
             directional_light_color: make_rgb(192, 192, 192),
-            backface_mode: BackfaceModeCCW,
+            backface_mode: BackfaceMode::BackfaceModeCCW,
             current_texture_handle: 0,
             texture_clamp: false,
             world_to_camera_matrix: Matrix4x3::identity(),
@@ -470,7 +475,304 @@ impl Renderer {
             .need_to_compute_model_to_clip_matrix = true;
     }
 
-    pub fn renderTriMesh(&self, p0: &Vec<RenderVertex>, p1: &i32, p2: &Vec<RenderTri>, p3: &i32) {
-        todo!()
+    // pub fn renderTriMesh(&self, p0: &Vec<RenderVertex>, p1: &i32, p2: &Vec<RenderTri>, p3: &i32) {
+    //     todo!()
+    // }
+
+    // getVideoModeCount
+    pub fn getVideoModeCount(&mut self) -> i32 {
+        todo!();
+    }
+
+    // getVideoMode
+    pub fn getVideoMode(&mut self, index: usize) -> VideoMode {
+        todo!();
+    }
+
+    // init
+    pub fn init(&mut self, mode: &VideoMode) {
+        todo!();
+    }
+
+    // shutdown
+    pub fn shutdown(&mut self) {
+        todo!();
+    }
+
+    // flipPages
+    pub fn flipPages(&mut self) {
+        todo!();
+    }
+
+    // beginScene
+    pub fn beginScene(&mut self) {
+        todo!();
+    }
+
+    // endScene
+    pub fn endScene(&mut self) {
+        todo!();
+    }
+
+    // setCamera
+    pub fn setCamera(&mut self, pos: &Vector3, orient: EulerAngles) {
+        todo!();
+    }
+
+    // setZoom
+    pub fn setZoom(&mut self, xZoom: f32, yZoom: f32) {
+        todo!();
+    }
+
+    // setNearFarClippingPlanes
+    pub fn setNearFarClippingPlanes(&mut self, n: f32, f: f32) {
+        todo!();
+    }
+
+    // setNearFarClippingPlanes
+    pub fn setWindow(&mut self, x1: i32, y1: i32, xSize: usize, ySize: usize) {
+        todo!();
+    }
+
+    // setFullScreenWindow
+    pub fn setFullScreenWindow(&mut self) {
+        todo!();
+    }
+
+    // getWindow
+    pub fn getWindow(&mut self, x1: i32, y1: i32, xSize: usize, ySize: usize) {
+        todo!();
+    }
+
+    // instance
+    pub fn instance(&mut self, pos: &Vector3, orient: EulerAngles) {
+        todo!();
+    }
+
+    // instancePop
+    pub fn instancePop(&mut self) {
+        todo!();
+    }
+
+    // setDepthBufferMode
+    pub fn setDepthBufferMode(&mut self, readEnabled: bool, writeEnabled: bool) {
+        todo!();
+    }
+
+    // setBlendEnable
+    pub fn setBlendEnable(&mut self, blend: bool) {
+        todo!();
+    }
+
+    // setSourceBlendMode
+    // setDestBlendMode
+    pub fn setSourceBlendMode(&mut self, mode: SourceBlendMode) {
+        todo!();
+    }
+
+    pub fn setDestBlendMode(&mut self, mode: DestBlendMode) {
+        todo!();
+    }
+
+    // setRGB
+    pub fn setRGB(&mut self, rgb: u32) {
+        todo!();
+    }
+
+    // setARGB
+    pub fn setARGB(&mut self, argb: u32) {
+        todo!();
+    }
+
+    // setOpacity
+    pub fn setOpacity(&mut self, a: f32) {
+        todo!();
+    }
+
+    // setFogEnable
+    pub fn setFogEnable(&mut self, flag: bool) {
+        todo!();
+    }
+
+    // setFogColor
+    pub fn setFogColor(&mut self, rgb: u32) {
+        todo!();
+    }
+
+    // setFogDistance
+    pub fn setFogDistance(&mut self, nearFog: f32, farFog: f32) {
+        todo!();
+    }
+
+    // setAmbientLightColor
+    pub fn setAmbientLightColor(&mut self, rgb: u32) {
+        todo!();
+    }
+
+    // setDirectionalLightVector
+    pub fn setDirectionalLightVector(&mut self, v: &Vector3) {
+        todo!();
+    }
+
+    // setDirectionalLightColor
+    pub fn setDirectionalLightColor(&mut self, rgb: u32) {
+        todo!();
+    }
+
+    // setLightEnable
+    pub fn setLightEnable(&mut self, flag: bool) {
+        todo!();
+    }
+
+    // setBackfaceMode
+    pub fn setBackfaceMode(&mut self, mode: BackfaceMode) {
+        todo!();
+    }
+
+    // selectTexture
+    pub fn selectTexture_handle(&mut self, handle: i32) {
+        todo!();
+    }
+
+    // selectTexture
+    pub fn selectTexture(&mut self, texture: &TextureReference) {
+        todo!();
+    }
+
+    // setTextureClamp
+    pub fn setTextureClamp(&mut self, flag: bool) {
+        todo!();
+    }
+
+    // clear
+    pub fn clear(&mut self, options: i32) {
+        todo!();
+    }
+
+    // renderTriMesh
+    pub fn renderTriMesh_vertlist(
+        &mut self,
+        vertexList: &Vec<RenderVertex>,
+        vertexCount: i32,
+        triList: &Vec<RenderTri>,
+        triCount: usize,
+    ) {
+        todo!();
+    }
+
+    pub fn renderTriMesh_vertL(
+        &mut self,
+        vertexList: &Vec<RenderVertexL>,
+        vertexCount: i32,
+        triList: &Vec<RenderTri>,
+        triCount: usize,
+    ) {
+        todo!();
+    }
+
+    pub fn renderTriMesh_vertTL(
+        &mut self,
+        vertexList: &Vec<RenderVertexTL>,
+        vertexCount: i32,
+        triList: &Vec<RenderTri>,
+        triCount: usize,
+    ) {
+        todo!();
+    }
+
+    // dot
+    pub fn dot(&mut self, x: i32, y: i32) {
+        todo!();
+    }
+
+    // line
+    pub fn line(&mut self, x1: i32, y1: i32, x2: i32, y2: i32) {
+        todo!();
+    }
+
+    // boxFill
+    pub fn boxFill(&mut self, x1: i32, y1: i32, x2: i32, y2: i32) {
+        todo!();
+    }
+
+    pub fn videoSave(&mut self) {
+        todo!();
+    }
+
+    pub fn videoRestore(&mut self) {
+        todo!();
+    }
+
+    // resetTextureCache
+    pub fn resetTextureCache(&mut self) {
+        todo!();
+    }
+
+    // findTexture
+    pub fn findTexture(&mut self, name: &str) -> i32 {
+        todo!();
+    }
+
+    // allocTexture
+    pub fn allocTexture(&mut self, name: &str, xSize: usize, ySize: usize) {
+        todo!();
+    }
+
+    // freeTexture
+    pub fn freeTexture(&mut self, handle: i32) {
+        todo!();
+    }
+
+    // setTextureImage
+    pub fn setTextureImage(&mut self, handle: i32, image: u32) {
+        todo!();
+    }
+
+    // cacheTexture
+    pub fn cacheTexture_filename(&mut self, filename: &str) {
+        todo!();
+    }
+
+    // cacheTexture
+    pub fn cacheTexture(&mut self, texture: &TextureReference) {
+        todo!();
+    }
+
+    // computeOutCode
+    pub fn computeOutCode(&mut self, p: &Vector3) -> i32 {
+        todo!();
+    }
+
+    // projectPoint
+    pub fn projectPoint(&mut self, p: &Vector3, result: &Vector3) -> i32 {
+        todo!();
+    }
+
+    // getModelToCameraMatrix
+    pub fn getModelToCameraMatrix(&mut self) -> &Matrix4x3 {
+        todo!();
+    }
+
+    // getModelToCameraMatrix
+    pub fn getModelToWorldMatrix(&mut self) -> &Matrix4x3 {
+        todo!();
+    }
+
+    pub fn computeClipMatrix(&mut self) {
+        todo!();
+    }
+
+    pub fn updateModelToWorldMatrix(&mut self) {
+        todo!();
+    }
+
+    // getModelToClipMatrix
+    pub fn getModelToClipMatrix(&mut self) {
+        todo!();
+    }
+
+    // freeAllTextures
+    pub fn freeAllTextures(&mut self) {
+        todo!();
     }
 }

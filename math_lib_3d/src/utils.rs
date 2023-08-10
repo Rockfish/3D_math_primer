@@ -1,4 +1,6 @@
 #![allow(dead_code)]
+#![allow(non_snake_case)]
+#![allow(non_camel_case_types)]
 
 use std::f32::consts::*;
 use std::fs::File;
@@ -40,6 +42,17 @@ pub fn atan2(a: f32, b: f32) -> f32 {
     a.atan2(b)
 }
 
+// Convert between "field of view" and "zoom"  See section 15.2.4.
+// The FOV angle is specified in radians.
+
+pub fn fovToZoom(fov: f32) -> f32 {
+    1.0 / (fov * 0.5).tan()
+}
+
+pub fn zoomToFov(zoom: f32) -> f32 {
+    2.0 * (1.0 / zoom).atan()
+}
+
 // Read packed structs from a file
 pub fn read_raw_struct<R: Read, T: Sized>(mut src: &File) -> io::Result<T> {
     unsafe {
@@ -51,7 +64,7 @@ pub fn read_raw_struct<R: Read, T: Sized>(mut src: &File) -> io::Result<T> {
     }
 }
 
-pub fn get_u8(buffer: &mut BufReader<File>) -> u8 {
+pub fn read_u8(buffer: &mut BufReader<File>) -> u8 {
     let mut buf: [u8; 1] = [0];
     buffer.read_exact(&mut buf).unwrap();
     buf[0]
